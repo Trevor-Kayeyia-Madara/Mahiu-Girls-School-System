@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'rest_framework',
     'students', # Your newly created app
     # 'mssql', # Uncomment if you encounter issues with the engine not being found
 ]
