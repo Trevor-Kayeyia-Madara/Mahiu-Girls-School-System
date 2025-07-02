@@ -19,7 +19,7 @@ def create_app():
     CORS(app)
 
     # Import models here so they're registered with SQLAlchemy
-    from models import User, Student, Staff
+    from models import User, Student, Staff, Classroom, Subject, TeacherSubject,  Grade, Message,  Announcement
 
     from routes import init_routes
     init_routes(app)
