@@ -60,10 +60,14 @@ class Subject(db.Model):
     subject_id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), unique=True, nullable=False)
 
+    # KCSE subject categorization
+    group = db.Column(db.String(20), nullable=False)  # 'language', 'science', 'humanity', 'elective'
+    compulsory = db.Column(db.Boolean, default=False)  # e.g. Math, English, Kiswahili, Chemistry
+
     teacher_subjects = db.relationship('TeacherSubject', backref='subject')
     grades = db.relationship('Grade', backref='subject')
 
-# === TEACHER-SUBJECT-CLASS LINK (Many-to-Many) ===
+# === TEACHER-SUBJECT-CLASS LINK ===
 class TeacherSubject(db.Model):
     __tablename__ = 'teacher_subjects'
     id = db.Column(db.Integer, primary_key=True)
