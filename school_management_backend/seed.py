@@ -6,6 +6,11 @@ from faker import Faker
 from app import create_app, db
 from models import User, Student, Staff, Subject, Classroom, TeacherSubject, Grade
 
+from flask_bcrypt import Bcrypt
+bcrypt = Bcrypt()
+
+hashed_pw = bcrypt.generate_password_hash("admin123").decode('utf-8')
+
 app = create_app()
 fake = Faker()
 
