@@ -1,6 +1,6 @@
 # type: ignore
 
-from flask import Flask 
+from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from dotenv import load_dotenv
@@ -18,8 +18,10 @@ def create_app():
     db.init_app(app)
     CORS(app)
 
-    # Import routes
-    from app.routes import init_routes
+    # Import models here so they're registered with SQLAlchemy
+    from models import User, Student, Staff
+
+    from routes import init_routes
     init_routes(app)
 
     return app
