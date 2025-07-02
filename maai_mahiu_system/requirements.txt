@@ -1,6 +1,0 @@
-# No specific database driver needed for SQLite3 as it's built-in with Python
-# Add other dependencies as needed for UI, web framework (if applicable), etc.
-# Example for a basic UI (Tkinter is built-in, but others like PyQt/Kivy need install)
-# If using a web framework like Flask/Django:
-# Flask
-# SQLAlchemy # For ORM with SQLite3
