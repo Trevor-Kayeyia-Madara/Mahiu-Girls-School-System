@@ -1,3 +1,5 @@
+#type: ignore
+
 import random
 from datetime import date
 from itertools import cycle
