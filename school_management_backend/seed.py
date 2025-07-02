@@ -1,13 +1,15 @@
-#type: ignore
-
+# type: ignore
 import random
 from datetime import date
-from itertools import cycle
 from faker import Faker
 
+from app import create_app, db
+from models import User, Student, Staff, Subject, Classroom, TeacherSubject, Grade
+
+app = create_app()
 fake = Faker()
 
-# Define constants
+# === CONSTANTS ===
 FORMS = ["Form 1", "Form 2", "Form 3", "Form 4"]
 STREAMS = ["Yellow", "White", "Red", "Blue", "Purple", "Green"]
 CORE_LANGUAGES = ["Mathematics", "English", "Kiswahili"]
@@ -17,75 +19,158 @@ HUMANITIES = ["C.R.E", "History", "Geography"]
 ELECTIVES = ["Computer Studies", "Agriculture", "Home Science", "French", "German", "Music", "Business Studies"]
 ALL_SUBJECTS = CORE_LANGUAGES + [COMPULSORY_SCIENCE] + SCIENCES + HUMANITIES + ELECTIVES
 
-# Helper to assign subjects per form
+def get_group(subject_name):
+    if subject_name in CORE_LANGUAGES:
+        return "language"
+    if subject_name in SCIENCES or subject_name == COMPULSORY_SCIENCE:
+        return "science"
+    if subject_name in HUMANITIES:
+        return "humanity"
+    return "elective"
+
 def assign_subjects(form_name):
     if form_name == "Form 1":
         return ALL_SUBJECTS.copy()
     else:
         subjects = CORE_LANGUAGES.copy()
         subjects.append(COMPULSORY_SCIENCE)
-        subjects.append(random.choice(SCIENCES))  # One more science
+        subjects.append(random.choice(SCIENCES))
         subjects += random.sample(HUMANITIES, 2)
-        subjects.append(random.choice(ELECTIVES))  # One elective
+        subjects.append(random.choice(ELECTIVES))
         return subjects
 
-# Generate classrooms
-classrooms = []
-for form in FORMS:
-    for stream in STREAMS:
-        classrooms.append(f"{form} {stream}")
+with app.app_context():
+    db.drop_all()
+    db.create_all()
 
-# Assign unique teachers per subject per classroom
-teacher_id = 1
-teacher_subject_map = {}
-class_teacher_ids = {}
-for classroom in classrooms:
-    teacher_subject_map[classroom] = {}
-    for subject in ALL_SUBJECTS:
-        teacher_subject_map[classroom][subject] = f"T{teacher_id:03d}"
-        teacher_id += 1
-    class_teacher_ids[classroom] = f"T{teacher_id:03d}"  # Also assign class teacher
-    teacher_id += 1
+    # === SUBJECTS ===
+    subject_objs = {}
+    for sub in ALL_SUBJECTS:
+        subject = Subject(name=sub, group=get_group(sub), compulsory=sub in CORE_LANGUAGES + [COMPULSORY_SCIENCE])
+        db.session.add(subject)
+        subject_objs[sub] = subject
+    db.session.commit()
 
-# Assign students and their subjects
-students = []
-grades = []
-student_id = 1
-grade_id = 1
-for classroom in classrooms:
-    form = classroom.split()[0]
-    subjects = assign_subjects(form)
-    student = {
-        "student_id": f"S{student_id:03d}",
-        "name": fake.name(),
-        "classroom": classroom,
-        "subjects": subjects
-    }
-    students.append(student)
-    # Assign grades
-    for subject in subjects:
-        grade = {
-            "grade_id": grade_id,
-            "student_id": student["student_id"],
-            "classroom": classroom,
-            "subject": subject,
-            "teacher_id": teacher_subject_map[classroom][subject],
-            "score": round(random.uniform(40, 95), 1),
-            "term": "Term 1",
-            "year": 2024
-        }
-        grades.append(grade)
-        grade_id += 1
-    student_id += 1
+    # === CLASSROOMS & STAFF ===
+    classrooms = []
+    teacher_count = 1
+    staff_list = []
+    for form in FORMS:
+        for stream in STREAMS:
+            class_name = f"{form} {stream}"
+            
+            # Create class teacher
+            user = User(
+                name=fake.name(),
+                email=fake.unique.email(),
+                password="hashedpassword",  # Replace with hash
+                role="teacher"
+            )
+            db.session.add(user)
+            db.session.flush()
 
-# Summary of seeded data
-summary = {
-    "total_classrooms": len(classrooms),
-    "total_teachers": teacher_id - 1,
-    "total_students": len(students),
-    "total_subjects": len(ALL_SUBJECTS),
-    "total_grades": len(grades)
-}
+            staff = Staff(
+                user_id=user.user_id,
+                employee_id=f"T{teacher_count:03d}",
+                gender=random.choice(["Male", "Female"]),
+                date_of_birth=fake.date_of_birth(minimum_age=25, maximum_age=50),
+                role="teacher",
+                qualifications="B.Ed",
+                contact=fake.phone_number()
+            )
+            db.session.add(staff)
+            db.session.flush()
+            staff_list.append(staff)
 
-summary
+            classroom = Classroom(class_name=class_name, class_teacher_id=staff.staff_id)
+            db.session.add(classroom)
+            db.session.flush()
+            classrooms.append((classroom, form))
+            teacher_count += 1
 
+    db.session.commit()
+
+    # === TEACHER-SUBJECT-CLASS ASSIGNMENTS ===
+    teacher_subject_map = {}
+    for (classroom, form) in classrooms:
+        teacher_subject_map[classroom.class_id] = {}
+        for sub in ALL_SUBJECTS:
+            # Assign another teacher per subject
+            user = User(
+                name=fake.name(),
+                email=fake.unique.email(),
+                password="hashedpassword",
+                role="teacher"
+            )
+            db.session.add(user)
+            db.session.flush()
+
+            staff = Staff(
+                user_id=user.user_id,
+                employee_id=f"T{teacher_count:03d}",
+                gender=random.choice(["Male", "Female"]),
+                date_of_birth=fake.date_of_birth(minimum_age=25, maximum_age=50),
+                role="teacher",
+                qualifications="B.Ed",
+                contact=fake.phone_number()
+            )
+            db.session.add(staff)
+            db.session.flush()
+
+            ts = TeacherSubject(
+                teacher_id=staff.staff_id,
+                subject_id=subject_objs[sub].subject_id,
+                class_id=classroom.class_id
+            )
+            db.session.add(ts)
+            teacher_subject_map[classroom.class_id][sub] = staff
+            teacher_count += 1
+    db.session.commit()
+
+    # === STUDENTS, USERS, GRADES ===
+    student_count = 1
+    grade_count = 1
+    for (classroom, form) in classrooms:
+        for _ in range(10):  # 10 students per class
+            user = User(
+                name=fake.name(),
+                email=fake.unique.email(),
+                password="hashedpassword",
+                role="student"
+            )
+            db.session.add(user)
+            db.session.flush()
+
+            student = Student(
+                user_id=user.user_id,
+                admission_number=f"S{student_count:04d}",
+                gender=random.choice(["Male", "Female"]),
+                date_of_birth=fake.date_of_birth(minimum_age=14, maximum_age=18),
+                guardian_name=fake.name(),
+                guardian_phone=fake.phone_number(),
+                address=fake.address(),
+                class_id=classroom.class_id
+            )
+            db.session.add(student)
+            db.session.flush()
+
+            # Assign subjects and grades
+            subjects = assign_subjects(form)
+            for sub in subjects:
+                teacher = teacher_subject_map[classroom.class_id][sub]
+                grade = Grade(
+                    student_id=student.student_id,
+                    class_id=classroom.class_id,
+                    subject_id=subject_objs[sub].subject_id,
+                    teacher_id=teacher.staff_id,
+                    term="Term 1",
+                    year=2024,
+                    score=round(random.uniform(45, 95), 1)
+                )
+                db.session.add(grade)
+                grade_count += 1
+
+            student_count += 1
+
+    db.session.commit()
+    print("✅ Database seeded successfully.")
