@@ -18,7 +18,7 @@ export default function AdminStudents() {
   const [editingStudent, setEditingStudent] = useState<Student | null>(null)
 
   const fetchStudents = async () => {
-    const res = await axios.get('http://127.0.0.1:5001/api/v1/students')
+    const res = await axios.get('http://localhost:5001/api/v1/students')
     setStudents(res.data)
     setLoading(false)
   }
@@ -29,7 +29,7 @@ export default function AdminStudents() {
 
   const handleDelete = async (id: number) => {
     if (!confirm('Are you sure you want to delete this student?')) return
-    await axios.delete(`/api/v1/students/${id}`)
+    await axios.delete(`http://localhost:5001/api/v1/students/${id}`)
     fetchStudents()
   }
 

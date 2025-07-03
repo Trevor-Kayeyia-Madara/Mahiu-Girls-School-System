@@ -36,9 +36,9 @@ export default function StudentForm({ onClose, onSaved, student }: Props) {
     }
 
     if (student) {
-      await axios.put(`http://127.0.0.1:5001/api/v1/students/${student.student_id}`, payload)
+      await axios.put(`http://localhost:5001/api/v1/students/${student.student_id}`, payload)
     } else {
-      await axios.post('http://127.0.0.1:5001/api/v1/students', payload)
+      await axios.post('http://localhost:5001/api/v1/students', payload)
     }
 
     onSaved()

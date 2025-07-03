@@ -19,7 +19,7 @@ def create_app():
 
     db.init_app(app)
     migrate.init_app(app, db)
-    CORS(app)
+    CORS(app, resources={r"/api/*": {"origins": "http://localhost:5173"}})
 
     # Register models
     from models import User, Student, Staff, Classroom, Subject, TeacherSubject, Grade, Message, Announcement
