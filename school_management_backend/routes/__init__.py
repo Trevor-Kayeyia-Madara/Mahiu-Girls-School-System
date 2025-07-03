@@ -8,6 +8,7 @@ from .subjects import subject_bp
 from .grades import grade_bp
 from .classrooms import class_bp
 from .assignments import assignment_bp
+from .announcements import announcement_bp
 
 def init_routes(app):
     app.register_blueprint(auth_bp, url_prefix='/api/v1/auth')
@@ -18,3 +19,4 @@ def init_routes(app):
     app.register_blueprint(grade_bp, url_prefix='/api/v1/grades')
     app.register_blueprint(class_bp, url_prefix='/api/v1/classrooms')
     app.register_blueprint(assignment_bp,url_prefix='/api/v1/assignments')
+    app.register_blueprint(announcement_bp,url_prefix='/api/v1/announcements')

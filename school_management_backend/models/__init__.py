@@ -11,7 +11,7 @@ class User(db.Model):
 
     student = db.relationship('Student', backref='user', uselist=False)
     staff = db.relationship('Staff', backref='user', uselist=False)
-
+    announcements = db.relationship('Announcement', backref='poster')
 # === STUDENT DATA ===
 class Student(db.Model):
     __tablename__ = 'students'
