@@ -10,21 +10,38 @@ interface Student {
   class_id: number
 }
 
+interface Classroom {
+  class_id: number
+  class_name: string
+}
+
 export default function AdminStudents() {
   const [students, setStudents] = useState<Student[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [editingStudent, setEditingStudent] = useState<Student | null>(null)
+  const [classrooms, setClassrooms] = useState<Classroom[]>([])
 
   const fetchStudents = async () => {
-    const res = await axios.get('http://localhost:5001/api/v1/students')
-    setStudents(res.data)
+  const [studentRes, classRes] = await Promise.all([
+      axios.get('http://localhost:5001/api/v1/students'),
+      axios.get('http://localhost:5001/api/v1/classrooms')
+    ])
+    console.log('Fetched Students:', studentRes.data)
+    console.log('Fetched Classrooms:', classRes.data)
+    setStudents(studentRes.data)
+    setClassrooms(classRes.data)
     setLoading(false)
   }
 
   useEffect(() => {
     fetchStudents()
   }, [])
+
+  const getClassName = (id: number): string => {
+  const cls = classrooms.find(c => c.class_id === id)
+  return cls ? cls.class_name : 'Unknown'
+}
 
   const handleDelete = async (id: number) => {
     if (!confirm('Are you sure you want to delete this student?')) return
@@ -65,7 +82,8 @@ export default function AdminStudents() {
                   <td>{s.name}</td>
                     <td>{s.email}</td>
                     <td>{s.admission_number}</td>
-                    <td>{s.class_id}</td> {/* or use a mapping to class name */}
+                    <td>{getClassName(s.class_id)}</td>
+
                   <td className="p-2 space-x-2">
                     <button
                       className="text-blue-600 hover:underline"
