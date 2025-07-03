@@ -1,8 +1,8 @@
 # type: ignore
 from flask import Blueprint, request, jsonify
 from app import db
-from app.models import Student, User, Classroom
-from app.utils.auth_utils import token_required
+from models import Student, User, Classroom
+from utils.auth_utils import token_required
 from datetime import datetime
 
 student_bp = Blueprint('students', __name__)
