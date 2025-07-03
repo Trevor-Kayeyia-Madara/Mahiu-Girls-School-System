@@ -1,6 +1,8 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useEffect, useState } from 'react'
 import axios from 'axios'
+import { jwtDecode } from "jwt-decode";
 
 interface User {
   id: number
@@ -18,15 +20,35 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
+const decodeUserFromToken = (token: string): User | null => {
+  try {
+    const decoded: any = jwtDecode(token)
+    return {
+      id: decoded.user_id,
+      name: decoded.name, // add `name` in token when issuing if needed
+      email: decoded.email,
+      role: decoded.role
+    }
+  } catch {
+    return null
+  }
+}
+
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null)
   const [token, setToken] = useState<string | null>(localStorage.getItem('token'))
+  const [loaded, setLoaded] = useState(false)
 
   useEffect(() => {
     if (token) {
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
+       const decodedUser = decodeUserFromToken(token)
+      setUser(decodedUser)
     }
+    setLoaded(true)
   }, [token])
+
+  if (!loaded) return null  // or a loading spinner
 
   const login = async (email: string, password: string) => {
     try {
