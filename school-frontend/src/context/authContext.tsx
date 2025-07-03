@@ -30,7 +30,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const login = async (email: string, password: string) => {
     try {
-      const res = await axios.post('http://localhost:5000/api/v1/auth/login', { email, password })
+      const res = await axios.post('http://localhost:5001/api/v1/auth/login', { email, password })
       const { token, user } = res.data
 
       setToken(token)
