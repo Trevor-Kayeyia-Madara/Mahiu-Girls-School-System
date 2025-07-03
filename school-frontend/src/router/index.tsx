@@ -5,6 +5,7 @@ import StudentDashboard from '../pages/StudentDashboard'
 import TeacherDashboard from '../pages/TeacherDashboard'
 import Unauthorized from '../pages/Unauthorized'
 import ProtectedRoute from './ProtectedRoute'
+import AdminLayout from '../layouts/AdminLayout'
 
 export default function AppRouter() {
   return (
@@ -13,7 +14,16 @@ export default function AppRouter() {
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/unauthorized" element={<Unauthorized />} />
-
+              <Route
+        path="/admin/dashboard"
+        element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <AdminLayout>
+              <AdminDashboard />
+            </AdminLayout>
+          </ProtectedRoute>
+        }
+      />
         <Route
           path="/admin/dashboard"
           element={
