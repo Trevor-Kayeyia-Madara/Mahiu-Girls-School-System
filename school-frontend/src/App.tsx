@@ -1,9 +1,7 @@
+import AppRouter from './router'
+
 function App() {
-  return (
-    <div className="min-h-screen flex items-center justify-center text-xl font-semibold">
-      School Management System Frontend Ready 🚀
-    </div>
-  )
+  return <AppRouter />
 }
 
 export default App
