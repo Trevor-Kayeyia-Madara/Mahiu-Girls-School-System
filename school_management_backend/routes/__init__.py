@@ -10,6 +10,7 @@ from .classrooms import class_bp
 from .assignments import assignment_bp
 from .announcements import announcement_bp
 from .reports import report_bp
+from .test import test_bp
 
 def init_routes(app):
     app.register_blueprint(auth_bp, url_prefix='/api/v1/auth')
@@ -22,3 +23,4 @@ def init_routes(app):
     app.register_blueprint(assignment_bp,url_prefix='/api/v1/assignments')
     app.register_blueprint(announcement_bp,url_prefix='/api/v1/announcements')
     app.register_blueprint(report_bp, url_prefix='/api/v1/reports')
+    app.register_blueprint(test_bp,url_prefix='/api/v1/test')

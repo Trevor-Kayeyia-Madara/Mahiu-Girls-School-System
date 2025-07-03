@@ -1,5 +1,5 @@
 #type:ignore
-from flask import Flask
+from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from flask_migrate import Migrate
@@ -19,15 +19,28 @@ def create_app():
     db.init_app(app)
     migrate.init_app(app, db)
 
-    # ✅ FIXED: Explicitly allow the origin for your frontend application
-    # You can also use CORS(app, resources={r"/api/*": {"origins": "http://localhost:3000"}})
-    # if you only want to apply CORS to specific API routes.
-    CORS(app, origins=["http://localhost:3000"])
+    # ✅ Allow all origins for dev — change in prod
+    CORS(app)
 
-    # Register models (assuming these files exist and are correctly structured)
+    # ✅ Log all requests for debug
+    @app.before_request
+    def log_request():
+        print(f"[REQ] {request.method} {request.path}")
+
+    # ✅ Handle OPTIONS preflight without redirect
+    @app.before_request
+    def handle_options():
+        if request.method == 'OPTIONS':
+            response = app.make_default_options_response()
+            headers = response.headers
+            headers['Access-Control-Allow-Origin'] = request.headers.get('Origin', '*')
+            headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+            headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+            headers['Access-Control-Allow-Credentials'] = 'true'
+            return response
+
+    # 👇 Ensure routes are registered AFTER app is created
     from models import User, Student, Staff, Classroom, Subject, TeacherSubject, Grade, Message, Announcement
-
-    # Initialize routes (assuming 'routes.py' exists and has 'init_routes' function)
     from routes import init_routes
     init_routes(app)
 

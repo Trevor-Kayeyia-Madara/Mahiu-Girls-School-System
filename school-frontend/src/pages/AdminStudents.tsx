@@ -1,13 +1,12 @@
 import { useEffect, useState } from 'react'
 import axios from 'axios'
-import AdminLayout from '../layouts/AdminLayout'
 import StudentForm from '../components/StudentForm'
 
 interface Student {
-  student_id: number
-  user: { name: string; email: string }
+  id: number
+  name: string
+  email: string
   admission_number: string
-  classroom?: { class_name: string }
   class_id: number
 }
 
@@ -34,7 +33,6 @@ export default function AdminStudents() {
   }
 
   return (
-    <AdminLayout>
       <div>
         <h1 className="text-2xl font-bold mb-4">👥 Manage Students</h1>
 
@@ -63,11 +61,11 @@ export default function AdminStudents() {
             </thead>
             <tbody>
               {students.map((s) => (
-                <tr key={s.student_id} className="border-t">
-                  <td className="p-2">{s.user.name}</td>
-                  <td className="p-2">{s.user.email}</td>
-                  <td className="p-2">{s.admission_number}</td>
-                  <td className="p-2">{s.classroom?.class_name || 'N/A'}</td>
+                <tr key={s.id} className="border-t">
+                  <td>{s.name}</td>
+                    <td>{s.email}</td>
+                    <td>{s.admission_number}</td>
+                    <td>{s.class_id}</td> {/* or use a mapping to class name */}
                   <td className="p-2 space-x-2">
                     <button
                       className="text-blue-600 hover:underline"
@@ -80,7 +78,7 @@ export default function AdminStudents() {
                     </button>
                     <button
                       className="text-red-600 hover:underline"
-                      onClick={() => handleDelete(s.student_id)}
+                      onClick={() => handleDelete(s.id)}
                     >
                       Delete
                     </button>
@@ -107,6 +105,5 @@ export default function AdminStudents() {
           />
         )}
       </div>
-    </AdminLayout>
   )
 }

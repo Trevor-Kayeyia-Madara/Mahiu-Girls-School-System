@@ -13,6 +13,7 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     axios.get('http://localhost:5001/api/v1/students').then(res => setStudents(res.data.length))
+    axios.get("http://localhost:5001/api/v1/test/test").then(console.log)
     axios.get('http://localhost:5001/api/v1/staff').then(res => setTeachers(res.data.length))
     axios.get('http://localhost:5001/api/v1/classrooms').then(res => setClasses(res.data.length))
     axios.get('http://localhost:5001/api/v1/announcements').then(res =>

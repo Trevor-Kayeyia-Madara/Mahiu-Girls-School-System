@@ -16,7 +16,7 @@ export default function StudentForm({ onClose, onSaved, student }: Props) {
   const [classOptions, setClassOptions] = useState([])
 
   useEffect(() => {
-    axios.get('http://127.0.0.1:5001/api/v1/classrooms').then(res => setClassOptions(res.data))
+    axios.get('http://localhost:5001/api/v1/classrooms').then(res => setClassOptions(res.data))
 
     if (student) {
       setName(student.user.name)
