@@ -19,6 +19,7 @@ export default function StudentForm({ onClose, onSaved, student }: Props) {
   const [address, setAddress] = useState('');
   const [classId, setClassId] = useState<number | ''>('');
   const [classOptions, setClassOptions] = useState([]);
+  const [studentCount, setStudentCount] = useState(0); // New state to keep track of student count
 
   useEffect(() => {
     // Fetch class options
@@ -26,20 +27,16 @@ export default function StudentForm({ onClose, onSaved, student }: Props) {
       .then(res => setClassOptions(res.data))
       .catch(err => console.error('Error fetching class options:', err));
 
-    // Fetch the last admission number
-    axios.get('http://localhost:5001/api/v1/students/last-admission-number')
-      .then(res => {
-        const lastAdmissionNumber = res.data.lastAdmissionNumber; // Assuming the response contains the last admission number
-        const nextAdmissionNumber = String(parseInt(lastAdmissionNumber) + 1).padStart(3, '0');
-        setAdmissionNumber(nextAdmissionNumber);
-      })
-      .catch(err => console.error('Error fetching last admission number:', err));
-
-    // Populate form fields if in edit mode
-    if (student) {
+    // Set admission number based on student count
+    if (!student) {
+      // Generate admission number based on current student count
+      const nextAdmissionNumber = String(studentCount + 1).padStart(3, '0');
+      setAdmissionNumber(nextAdmissionNumber);
+    } else {
+      // Populate form fields if in edit mode
       setFirstName(student?.first_name || '');
       setLastName(student?.last_name || '');
-      setAdmissionNumber(student?.admission_number || '');
+      setAdmissionNumber(student?.admission_number || ''); // This will be read-only
       setGender(student?.gender || '');
       setDateOfBirth(student?.date_of_birth || '');
       setGuardianName(student?.guardian_name || '');
@@ -47,7 +44,7 @@ export default function StudentForm({ onClose, onSaved, student }: Props) {
       setAddress(student?.address || '');
       setClassId(student?.class_id || '');
     }
-  }, [student]);
+  }, [student, studentCount]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,14 +62,14 @@ export default function StudentForm({ onClose, onSaved, student }: Props) {
     };
 
     try {
-      const studentIdToUpdate = student?.student_id || student?.user?.student_id || student?.id;
-
-      if (student && studentIdToUpdate) {
+      if (student) {
+        const studentIdToUpdate = student?.student_id || student?.user?.student_id || student?.id;
         console.log('Updating student with ID:', studentIdToUpdate);
         await axios.put(`http://localhost:5001/api/v1/students/${studentIdToUpdate}`, payload);
       } else {
         console.log('Creating new student');
         await axios.post('http://localhost:5001/api/v1/students', payload);
+        setStudentCount(prevCount => prevCount + 1); // Increment student count after adding a new student
       }
 
       onSaved();
@@ -103,10 +100,9 @@ export default function StudentForm({ onClose, onSaved, student }: Props) {
           />
           <input
             value={admissionNumber}
-            onChange={e => setAdmissionNumber(e.target.value)} // This can be disabled in edit mode
             className="w-full border p-2 rounded"
             placeholder="Admission Number"
-            readOnly={!!student} // Make it read-only if editing
+            readOnly // Admission number is now read-only
             required
           />
           <input
