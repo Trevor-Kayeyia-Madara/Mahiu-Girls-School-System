@@ -1,8 +1,8 @@
-"""Initial schema
+"""Initial migration
 
-Revision ID: 29d0b15c66d9
+Revision ID: b0ff695d2d8f
 Revises: 
-Create Date: 2025-07-02 23:18:40.457925
+Create Date: 2025-07-04 19:04:01.066444
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '29d0b15c66d9'
+revision = 'b0ff695d2d8f'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -79,8 +79,9 @@ def upgrade():
     )
     op.create_table('students',
     sa.Column('student_id', sa.Integer(), nullable=False),
-    sa.Column('user_id', sa.Integer(), nullable=False),
     sa.Column('admission_number', sa.String(length=50), nullable=False),
+    sa.Column('first_name', sa.String(length=100), nullable=False),
+    sa.Column('last_name', sa.String(length=100), nullable=False),
     sa.Column('gender', sa.String(length=10), nullable=False),
     sa.Column('date_of_birth', sa.Date(), nullable=True),
     sa.Column('guardian_name', sa.String(length=100), nullable=True),
@@ -88,10 +89,8 @@ def upgrade():
     sa.Column('address', sa.String(length=200), nullable=True),
     sa.Column('class_id', sa.Integer(), nullable=True),
     sa.ForeignKeyConstraint(['class_id'], ['classrooms.class_id'], ),
-    sa.ForeignKeyConstraint(['user_id'], ['users.user_id'], ),
     sa.PrimaryKeyConstraint('student_id'),
-    sa.UniqueConstraint('admission_number'),
-    sa.UniqueConstraint('user_id')
+    sa.UniqueConstraint('admission_number')
     )
     op.create_table('teacher_subjects',
     sa.Column('id', sa.Integer(), nullable=False),

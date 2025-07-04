@@ -19,6 +19,12 @@ HUMANITIES = ["C.R.E", "History", "Geography"]
 ELECTIVES = ["Computer Studies", "Agriculture", "Home Science", "French", "German", "Music", "Business Studies"]
 ALL_SUBJECTS = CORE_LANGUAGES + [COMPULSORY_SCIENCE] + SCIENCES + HUMANITIES + ELECTIVES
 
+# List of common Kenyan names for students
+KENYAN_GIRL_NAMES = [
+    "Amani", "Wanjiru", "Aisha", "Njeri", "Akinyi", "Adhiambo", "Kezi", "Zawadi", "Nyambura", "Jabari",
+    "Muthoni", "Wairimu", "Asha", "Lilian", "Diana", "Joyce", "Faith", "Mercy", "Esther", "Cynthia"
+]
+
 def get_group(subject_name):
     if subject_name in CORE_LANGUAGES:
         return "language"
@@ -42,6 +48,16 @@ def assign_subjects(form_name):
 with app.app_context():
     db.drop_all()
     db.create_all()
+
+    # === Create Admin User ===
+    admin_user = User(
+        name="Admin User",
+        email="admin@example.com",
+        password="admin123",  # plain password
+        role="admin"
+    )
+    db.session.add(admin_user)
+    db.session.commit()
 
     # === SUBJECTS ===
     subject_objs = {}
@@ -132,7 +148,7 @@ with app.app_context():
     for (classroom, form) in classrooms:
         for _ in range(10):  # 10 students per class
             user = User(
-                name=fake.name(),
+                name=random.choice(KENYAN_GIRL_NAMES),  # Use Kenyan girl names
                 email=fake.unique.email(),
                 password="student123",  # plain password
                 role="student"

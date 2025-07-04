@@ -1,64 +1,76 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useEffect, useState } from 'react'
-import axios from 'axios'
+import { useEffect, useState } from 'react';
+import axios from 'axios';
 
 interface Props {
-  onClose: () => void
-  onSaved: () => void
-  student?: any // used in edit mode
+  onClose: () => void;
+  onSaved: () => void;
+  student?: any; // used in edit mode
 }
 
 export default function StudentForm({ onClose, onSaved, student }: Props) {
-  const [name, setName] = useState('')
-  const [email, setEmail] = useState('')
-  const [admissionNumber, setAdmissionNumber] = useState('')
-  const [classId, setClassId] = useState<number | ''>('')
-  const [classOptions, setClassOptions] = useState([])
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [email, setEmail] = useState('');
+  const [admissionNumber, setAdmissionNumber] = useState('');
+  const [gender, setGender] = useState('');
+  const [dateOfBirth, setDateOfBirth] = useState('');
+  const [guardianName, setGuardianName] = useState('');
+  const [guardianPhone, setGuardianPhone] = useState('');
+  const [address, setAddress] = useState('');
+  const [classId, setClassId] = useState<number | ''>('');
+  const [classOptions, setClassOptions] = useState([]);
 
   useEffect(() => {
     axios.get('http://localhost:5001/api/v1/classrooms')
-      .then(res => setClassOptions(res.data))
+      .then(res => setClassOptions(res.data));
 
     if (student) {
-      setName(student?.user?.name || '')
-      setEmail(student?.user?.email || '')
-      setAdmissionNumber(student?.admission_number || '')
-      setClassId(student?.class_id || '')
-      // No explicit student_id state needed here, it's used directly from the prop
+      setFirstName(student?.first_name || '');
+      setLastName(student?.last_name || '');
+      setEmail(student?.user?.email || '');
+      setAdmissionNumber(student?.admission_number || '');
+      setGender(student?.gender || '');
+      setDateOfBirth(student?.date_of_birth || '');
+      setGuardianName(student?.guardian_name || '');
+      setGuardianPhone(student?.guardian_phone || '');
+      setAddress(student?.address || '');
+      setClassId(student?.class_id || '');
     }
-  }, [student])
-
+  }, [student]);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
 
     const payload = {
-      name,
-      email,
+      first_name: firstName,
+      last_name: lastName,
       admission_number: admissionNumber,
-      class_id: parseInt(classId as string), // Cast classId to string for parseInt
-    }
+      gender,
+      date_of_birth: dateOfBirth,
+      guardian_name: guardianName,
+      guardian_phone: guardianPhone,
+      address,
+      class_id: parseInt(classId as string),
+    };
 
     try {
-      // Check if student exists and has a student_id property (wherever it might be located)
-      // You'll need to confirm the exact path to student_id in your `student` object.
-      // For example, if it's student.student_id or student.user.student_id or student.id
-      const studentIdToUpdate = student?.student_id || student?.user?.student_id || student?.id; // Add more potential paths if needed
+      const studentIdToUpdate = student?.student_id || student?.user?.student_id || student?.id;
 
       if (student && studentIdToUpdate) {
-        console.log('Updating student with ID:', studentIdToUpdate)
-        await axios.put(`http://localhost:5001/api/v1/students/${studentIdToUpdate}`, payload)
+        console.log('Updating student with ID:', studentIdToUpdate);
+        await axios.put(`http://localhost:5001/api/v1/students/${studentIdToUpdate}`, payload);
       } else {
-        console.log('Creating new student')
-        await axios.post('http://localhost:5001/api/v1/students', payload)
+        console.log('Creating new student');
+        await axios.post('http://localhost:5001/api/v1/students', payload);
       }
 
-      onSaved()
-      onClose()
+      onSaved();
+      onClose();
     } catch (err) {
-      console.error('Error saving student:', err)
+      console.error('Error saving student:', err);
     }
-  }
+  };
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
@@ -66,10 +78,17 @@ export default function StudentForm({ onClose, onSaved, student }: Props) {
         <h2 className="text-xl font-bold mb-4">{student ? 'Edit Student' : 'Add Student'}</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <input
-            value={name}
-            onChange={e => setName(e.target.value)}
+            value={firstName}
+            onChange={e => setFirstName(e.target.value)}
             className="w-full border p-2 rounded"
-            placeholder="Name"
+            placeholder="First Name"
+            required
+          />
+          <input
+            value={lastName}
+            onChange={e => setLastName(e.target.value)}
+            className="w-full border p-2 rounded"
+            placeholder="Last Name"
             required
           />
           <input
@@ -86,6 +105,39 @@ export default function StudentForm({ onClose, onSaved, student }: Props) {
             className="w-full border p-2 rounded"
             placeholder="Admission Number"
             required
+          />
+          <input
+            value={gender}
+            onChange={e => setGender(e.target.value)}
+            className="w-full border p-2 rounded"
+            placeholder="Gender"
+            required
+          />
+          <input
+            value={dateOfBirth}
+            onChange={e => setDateOfBirth(e.target.value)}
+            type="date"
+            className="w-full border p-2 rounded"
+            placeholder="Date of Birth"
+            required
+          />
+          <input
+            value={guardianName}
+            onChange={e => setGuardianName(e.target.value)}
+            className="w-full border p-2 rounded"
+            placeholder="Guardian Name"
+          />
+          <input
+            value={guardianPhone}
+            onChange={e => setGuardianPhone(e.target.value)}
+            className="w-full border p-2 rounded"
+            placeholder="Guardian Phone"
+          />
+          <input
+            value={address}
+            onChange={e => setAddress(e.target.value)}
+            className="w-full border p-2 rounded"
+            placeholder="Address"
           />
           <select
             value={classId}
@@ -109,5 +161,5 @@ export default function StudentForm({ onClose, onSaved, student }: Props) {
         </form>
       </div>
     </div>
-  )
+  );
 }

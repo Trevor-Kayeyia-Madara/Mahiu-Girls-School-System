@@ -17,7 +17,8 @@ def get_all_students(current_user):
     students = Student.query.all()
     return jsonify([{
         'id': s.student_id,
-        'name': s.user.name,
+        'first_name': s.first_name,  # Updated to include first_name
+        'last_name': s.last_name,    # Updated to include last_name
         'email': s.user.email,
         'admission_number': s.admission_number,
         'class_id': s.class_id
@@ -35,7 +36,8 @@ def get_student(current_user, student_id):
 
     return jsonify({
         'id': student.student_id,
-        'name': student.user.name,
+        'first_name': student.first_name,  # Updated to include first_name
+        'last_name': student.last_name,    # Updated to include last_name
         'email': student.user.email,
         'admission_number': student.admission_number,
         'gender': student.gender,
@@ -57,7 +59,7 @@ def create_student(current_user):
     try:
         # Step 1: Create user
         user = User(
-            name=data['name'],
+            name=f"{data['first_name']} {data['last_name']}",  # Combine first and last name
             email=data['email'],
             password=data['password'],
             role='student'
@@ -69,6 +71,8 @@ def create_student(current_user):
         student = Student(
             user_id=user.user_id,
             admission_number=data['admission_number'],
+            first_name=data['first_name'],  # Added first_name
+            last_name=data['last_name'],    # Added last_name
             gender=data['gender'],
             date_of_birth=datetime.strptime(data['date_of_birth'], '%Y-%m-%d'),
             guardian_name=data.get('guardian_name'),
@@ -101,6 +105,8 @@ def update_student(current_user, student_id):
     student.guardian_phone = data.get('guardian_phone', student.guardian_phone)
     student.address = data.get('address', student.address)
     student.class_id = data.get('class_id', student.class_id)
+    student.first_name = data.get('first_name', student.first_name)  # Update first_name
+    student.last_name = data.get('last_name', student.last_name)      # Update last_name
 
     db.session.commit()
     return jsonify({'message': 'Student updated successfully'}), 200

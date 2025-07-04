@@ -9,15 +9,17 @@ class User(db.Model):
     password = db.Column(db.String(200), nullable=False)
     role = db.Column(db.String(20), nullable=False)  # 'admin', 'teacher', 'student', 'parent'
 
-    student = db.relationship('Student', backref='user', uselist=False)
+    # Removed the relationship to Student
     staff = db.relationship('Staff', backref='user', uselist=False)
     announcements = db.relationship('Announcement', backref='poster')
+
 # === STUDENT DATA ===
 class Student(db.Model):
     __tablename__ = 'students'
     student_id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.user_id'), nullable=False, unique=True)
     admission_number = db.Column(db.String(50), unique=True, nullable=False)
+    first_name = db.Column(db.String(100), nullable=False)  # Added first_name
+    last_name = db.Column(db.String(100), nullable=False)   # Added last_name
     gender = db.Column(db.String(10), nullable=False)
     date_of_birth = db.Column(db.Date)
     guardian_name = db.Column(db.String(100))
