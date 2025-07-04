@@ -11,7 +11,6 @@ interface Props {
 export default function StudentForm({ onClose, onSaved, student }: Props) {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
-  const [email, setEmail] = useState('');
   const [admissionNumber, setAdmissionNumber] = useState('');
   const [gender, setGender] = useState('');
   const [dateOfBirth, setDateOfBirth] = useState('');
@@ -22,13 +21,24 @@ export default function StudentForm({ onClose, onSaved, student }: Props) {
   const [classOptions, setClassOptions] = useState([]);
 
   useEffect(() => {
+    // Fetch class options
     axios.get('http://localhost:5001/api/v1/classrooms')
-      .then(res => setClassOptions(res.data));
+      .then(res => setClassOptions(res.data))
+      .catch(err => console.error('Error fetching class options:', err));
 
+    // Fetch the last admission number
+    axios.get('http://localhost:5001/api/v1/students/last-admission-number')
+      .then(res => {
+        const lastAdmissionNumber = res.data.lastAdmissionNumber; // Assuming the response contains the last admission number
+        const nextAdmissionNumber = String(parseInt(lastAdmissionNumber) + 1).padStart(3, '0');
+        setAdmissionNumber(nextAdmissionNumber);
+      })
+      .catch(err => console.error('Error fetching last admission number:', err));
+
+    // Populate form fields if in edit mode
     if (student) {
       setFirstName(student?.first_name || '');
       setLastName(student?.last_name || '');
-      setEmail(student?.user?.email || '');
       setAdmissionNumber(student?.admission_number || '');
       setGender(student?.gender || '');
       setDateOfBirth(student?.date_of_birth || '');
@@ -92,18 +102,11 @@ export default function StudentForm({ onClose, onSaved, student }: Props) {
             required
           />
           <input
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-            type="email"
-            className="w-full border p-2 rounded"
-            placeholder="Email"
-            required
-          />
-          <input
             value={admissionNumber}
-            onChange={e => setAdmissionNumber(e.target.value)}
+            onChange={e => setAdmissionNumber(e.target.value)} // This can be disabled in edit mode
             className="w-full border p-2 rounded"
             placeholder="Admission Number"
+            readOnly={!!student} // Make it read-only if editing
             required
           />
           <input
