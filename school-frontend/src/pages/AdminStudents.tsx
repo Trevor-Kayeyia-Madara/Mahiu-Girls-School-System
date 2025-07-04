@@ -4,8 +4,8 @@ import StudentForm from '../components/StudentForm';
 
 interface Student {
   id: number;
-  name: string;
-  email: string;
+  first_name: string;
+  last_name: string;
   admission_number: string;
   gender: string; // Added gender
   date_of_birth: string; // Added date_of_birth
@@ -83,7 +83,8 @@ export default function AdminStudents() {
         <table className="w-full table-auto bg-white shadow rounded">
           <thead className="bg-gray-100 text-left">
             <tr>
-              <th className="p-2">Name</th>
+              <th className="p-2">First Name</th>
+              <th className="p-2">Last Name</th>
               <th className="p-2">Admission #</th>
               <th className="p-2">Class</th>
               <th className="p-2">Gender</th> {/* Added Gender Column */}
@@ -97,7 +98,7 @@ export default function AdminStudents() {
           <tbody>
             {students.map((s) => (
               <tr key={s.id} className="border-t">
-                <td>{s.name}</td>
+                <td>{s.first_name}</td>
                 <td>{s.admission_number}</td>
                 <td>{getClassName(s.class_id)}</td>
                 <td>{s.gender}</td> {/* Display Gender */}
