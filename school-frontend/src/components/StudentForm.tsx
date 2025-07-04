@@ -16,33 +16,48 @@ export default function StudentForm({ onClose, onSaved, student }: Props) {
   const [classOptions, setClassOptions] = useState([])
 
   useEffect(() => {
-    axios.get('http://localhost:5001/api/v1/classrooms').then(res => setClassOptions(res.data))
+    axios.get('http://localhost:5001/api/v1/classrooms')
+      .then(res => setClassOptions(res.data))
 
     if (student) {
-      setName(student.user.name)
-      setEmail(student.user.email)
-      setAdmissionNumber(student.admission_number)
-      setClassId(student.class_id)
+      setName(student?.user?.name || '')
+      setEmail(student?.user?.email || '')
+      setAdmissionNumber(student?.admission_number || '')
+      setClassId(student?.class_id || '')
+      // No explicit student_id state needed here, it's used directly from the prop
     }
   }, [student])
 
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
     const payload = {
       name,
       email,
       admission_number: admissionNumber,
-      class_id: classId
+      class_id: parseInt(classId as string), // Cast classId to string for parseInt
     }
 
-    if (student) {
-      await axios.put(`http://localhost:5001/api/v1/students/${student.student_id}`, payload)
-    } else {
-      await axios.post('http://localhost:5001/api/v1/students', payload)
-    }
+    try {
+      // Check if student exists and has a student_id property (wherever it might be located)
+      // You'll need to confirm the exact path to student_id in your `student` object.
+      // For example, if it's student.student_id or student.user.student_id or student.id
+      const studentIdToUpdate = student?.student_id || student?.user?.student_id || student?.id; // Add more potential paths if needed
 
-    onSaved()
-    onClose()
+      if (student && studentIdToUpdate) {
+        console.log('Updating student with ID:', studentIdToUpdate)
+        await axios.put(`http://localhost:5001/api/v1/students/${studentIdToUpdate}`, payload)
+      } else {
+        console.log('Creating new student')
+        await axios.post('http://localhost:5001/api/v1/students', payload)
+      }
+
+      onSaved()
+      onClose()
+    } catch (err) {
+      console.error('Error saving student:', err)
+    }
   }
 
   return (
