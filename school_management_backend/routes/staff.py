@@ -5,6 +5,13 @@ from app import db
 from utils.auth_utils import token_required
 from datetime import datetime
 
+import random
+import string
+
+def generate_employee_id():
+    return 'EMP' + ''.join(random.choices(string.digits, k=6))
+
+
 staff_bp = Blueprint('staff', __name__)
 
 # GET all staff
@@ -49,6 +56,44 @@ def get_staff(current_user, staff_id):
         'qualifications': staff.qualifications,
         'contact': staff.contact
     }), 200
+# PUT update existing staff
+@staff_bp.route('/<int:staff_id>', methods=['PUT'])
+@token_required
+def update_staff(current_user, staff_id):
+    staff = Staff.query.get_or_404(staff_id)
+
+    # Only admin or the user themself can update
+    if current_user.role != 'admin' and current_user.user_id != staff.user_id:
+        return jsonify({'error': 'Access denied'}), 403
+
+    data = request.get_json()
+
+    try:
+        # Update User fields
+        staff.user.name = data.get('name', staff.user.name)
+        staff.user.email = data.get('email', staff.user.email)
+
+        # Update password if provided (optional)
+        if 'password' in data and data['password']:
+            from werkzeug.security import generate_password_hash
+            staff.user.password = generate_password_hash(data['password'])
+
+        # Update Staff fields
+        staff.gender = data.get('gender', staff.gender)
+        staff.contact = data.get('contact', staff.contact)
+        staff.role = data.get('role', staff.role)
+        staff.qualifications = data.get('qualifications', staff.qualifications)
+
+        if data.get('date_of_birth'):
+            staff.date_of_birth = datetime.strptime(data['date_of_birth'], '%Y-%m-%d')
+
+        db.session.commit()
+
+        return jsonify({'message': 'Staff updated successfully'}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
 
 # POST create new staff
 @staff_bp.route('/', methods=['POST'])

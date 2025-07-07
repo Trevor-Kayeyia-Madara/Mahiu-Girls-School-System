@@ -1,13 +1,15 @@
+// types/Staff.ts
 export interface Staff {
   staff_id: number
-  user: {
+  employee_id: string
+  gender: string
+  contact: string
+  role: string
+  date_of_birth?: string
+  qualifications?: string
+  user?: {
+    user_id: number
     name: string
     email: string
   }
-  employee_id: string
-  gender: string
-  date_of_birth: string
-  contact: string
-  qualifications: string
-  role: string
 }
