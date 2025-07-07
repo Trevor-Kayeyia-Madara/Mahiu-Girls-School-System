@@ -7,6 +7,7 @@ import Unauthorized from '../pages/Unauthorized'
 import ProtectedRoute from './ProtectedRoute'
 import AdminLayout from '../layouts/AdminLayout'
 import AdminStudents from '../pages/AdminStudents'
+import AdminStaff from '../pages/AdminStaff'
 
 export default function AppRouter() {
   return (
@@ -40,6 +41,14 @@ export default function AppRouter() {
       <AdminLayout>
         <AdminStudents />
       </AdminLayout>
+    </ProtectedRoute>
+  }
+/>
+<Route
+  path="/admin/staff"
+  element={
+    <ProtectedRoute allowedRoles={['admin']}>
+      <AdminStaff />
     </ProtectedRoute>
   }
 />
