@@ -14,7 +14,6 @@ def generate_employee_id():
 
 staff_bp = Blueprint('staff', __name__)
 
-# GET all staff
 @staff_bp.route('/', methods=['GET'])
 @token_required
 def get_all_staff(current_user):
@@ -22,18 +21,22 @@ def get_all_staff(current_user):
         return jsonify({'error': 'Access denied'}), 403
 
     staff_members = Staff.query.all()
-    return jsonify([{
-        'staff_id': s.staff_id,
-        'user_id': s.user_id,
-        'name': s.user.name,
-        'email': s.user.email,
-        'employee_id': s.employee_id,
-        'gender': s.gender,
-        'date_of_birth': s.date_of_birth.isoformat() if s.date_of_birth else None,
-        'role': s.role,
-        'qualifications': s.qualifications,
-        'contact': s.contact
-    } for s in staff_members]), 200
+    return jsonify([
+        {
+            'staff_id': s.staff_id,
+            'user_id': s.user_id,
+            'employee_id': s.employee_id,
+            'gender': s.gender,
+            'date_of_birth': s.date_of_birth.isoformat() if s.date_of_birth else None,
+            'role': s.role,
+            'qualifications': s.qualifications,
+            'contact': s.contact,
+            'user': {
+                'name': s.user.name,
+                'email': s.user.email
+            }
+        } for s in staff_members
+    ]), 200
 
 # GET one staff member
 @staff_bp.route('/<int:staff_id>', methods=['GET'])
@@ -47,15 +50,18 @@ def get_staff(current_user, staff_id):
     return jsonify({
         'staff_id': staff.staff_id,
         'user_id': staff.user_id,
-        'name': staff.user.name,
-        'email': staff.user.email,
         'employee_id': staff.employee_id,
         'gender': staff.gender,
         'date_of_birth': staff.date_of_birth.isoformat() if staff.date_of_birth else None,
         'role': staff.role,
         'qualifications': staff.qualifications,
-        'contact': staff.contact
+        'contact': staff.contact,
+        'user': {
+            'name': staff.user.name,
+            'email': staff.user.email
+        }
     }), 200
+
 # PUT update existing staff
 @staff_bp.route('/<int:staff_id>', methods=['PUT'])
 @token_required
