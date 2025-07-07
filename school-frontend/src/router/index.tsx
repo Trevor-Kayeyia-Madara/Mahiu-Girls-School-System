@@ -8,6 +8,7 @@ import ProtectedRoute from './ProtectedRoute'
 import AdminLayout from '../layouts/AdminLayout'
 import AdminStudents from '../pages/AdminStudents'
 import AdminStaff from '../pages/AdminStaff'
+import AdminClassAssignments from '../pages/AdminClassAssignments'
 
 export default function AppRouter() {
   return (
@@ -26,6 +27,15 @@ export default function AppRouter() {
           </ProtectedRoute>
         }
       />
+      <Route
+  path="/admin/class-assignments"
+  element={
+    <ProtectedRoute allowedRoles={['admin']}>
+      <AdminClassAssignments />
+    </ProtectedRoute>
+  }
+/>
+
         <Route
           path="/admin/dashboard"
           element={

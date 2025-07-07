@@ -4,6 +4,7 @@ from models import User, Staff
 from app import db
 from utils.auth_utils import token_required
 from datetime import datetime
+ts_bp = Blueprint('teacher_subjects', __name__)
 
 import random
 import string
@@ -100,6 +101,7 @@ def update_staff(current_user, staff_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
+
 
 # POST create new staff
 @staff_bp.route('/', methods=['POST'])
