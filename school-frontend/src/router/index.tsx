@@ -10,6 +10,9 @@ import AdminStudents from '../pages/AdminStudents'
 import AdminStaff from '../pages/AdminStaff'
 import AdminClassAssignments from '../pages/AdminClassAssignments'
 import AdminGradebook from '../pages/AdminGradeBook'
+import AdminTimetable from '../pages/AdminTimetable'
+import AdminPerformance from '../pages/AdminPerformance'
+import AdminSettings from '../pages/AdminSettings'
 
 export default function AppRouter() {
   return (
@@ -38,6 +41,38 @@ export default function AppRouter() {
 />
     <Route
   path="/admin/reports"
+  element={
+    <ProtectedRoute allowedRoles={['admin']}>
+      <AdminGradebook />
+    </ProtectedRoute>
+  }
+/>
+    <Route
+  path="/admin/timetabling"
+  element={
+    <ProtectedRoute allowedRoles={['admin']}>
+      <AdminTimetable/>
+    </ProtectedRoute>
+  }
+/>
+    <Route
+  path="/admin/settings"
+  element={
+    <ProtectedRoute allowedRoles={['admin']}>
+      <AdminSettings />
+    </ProtectedRoute>
+  }
+/>
+    <Route
+  path="/admin/performance"
+  element={
+    <ProtectedRoute allowedRoles={['admin']}>
+      <AdminPerformance />
+    </ProtectedRoute>
+  }
+/>
+    <Route
+  path="/admin/messages"
   element={
     <ProtectedRoute allowedRoles={['admin']}>
       <AdminGradebook />

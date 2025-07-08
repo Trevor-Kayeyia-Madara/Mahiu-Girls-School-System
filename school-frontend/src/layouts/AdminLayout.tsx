@@ -22,6 +22,10 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
           <a href="/admin/staff" className="hover:underline">Manage Staff</a>
           <a href="/admin/class-assignments" className="hover:underline">Manage Classes</a>
           <a href="/admin/reports" className="hover:underline">Reports</a>
+          <a href="/admin/timetabling" className="hover:underline">Timetables</a>
+          <a href="/admin/performance" className="hover:underline">Performance</a>
+          <a href="/admin/messages" className="hover:underline">Messages</a>
+          <a href="/admin/settings" className="hover:underline">Settings</a>
         </nav>
         <button onClick={handleLogout} className="mt-6 bg-red-500 px-4 py-2 rounded hover:bg-red-600">
           Logout
