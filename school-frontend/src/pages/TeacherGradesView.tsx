@@ -28,6 +28,9 @@ export default function TeacherGradesView() {
   const [selectedSubject, setSelectedSubject] = useState<number | null>(null)
   const [grades, setGrades] = useState<StudentGrade[]>([])
   const [loading, setLoading] = useState(false)
+  const [selectedTerm, setSelectedTerm] = useState<string>('Term 1')
+  const [selectedYear, setSelectedYear] = useState<number>(2025)
+
 
   const getKCSEGrade = (score: number): string => {
     if (score >= 80) return 'A'
@@ -122,6 +125,28 @@ const exportToCSV = () => {
             </option>
           ))}
         </select>
+        <select
+  value={selectedTerm}
+  onChange={(e) => setSelectedTerm(e.target.value)}
+  className="p-2 border rounded"
+>
+  <option value="Term 1">Term 1</option>
+  <option value="Term 2">Term 2</option>
+  <option value="Term 3">Term 3</option>
+</select>
+
+<select
+  value={selectedYear}
+  onChange={(e) => setSelectedYear(Number(e.target.value))}
+  className="p-2 border rounded"
+>
+  {[2023, 2024, 2025, 2026].map((y) => (
+    <option key={y} value={y}>
+      {y}
+    </option>
+  ))}
+</select>
+
 
         <button
           onClick={fetchGrades}
