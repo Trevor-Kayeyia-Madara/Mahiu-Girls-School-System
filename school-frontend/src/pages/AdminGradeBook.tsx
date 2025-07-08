@@ -12,6 +12,9 @@ interface GradeEntry {
   grade: string
   term: string
   year: number
+  average_score?: number
+  mean_grade?: string
+  position?: number
 }
 
 interface Classroom {
@@ -53,6 +56,9 @@ export default function AdminGradebook() {
           grade: g.grade,
           term: g.term,
           year: g.year,
+          average_score: student.average_score,
+          mean_grade: student.mean_grade,
+          position: student.position
         })
       })
     })
@@ -91,6 +97,7 @@ const exportToPDF = async () => {
   const link = document.createElement('a')
   link.href = url
   link.setAttribute('download', 'kcse_gradebook.pdf')
+  
   document.body.appendChild(link)
   link.click()
   link.remove()

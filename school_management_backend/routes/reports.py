@@ -42,62 +42,124 @@ def student_report(current_user, student_id):
         'grades': subjects
     }), 200
 
-# 📄 Class performance report
 @report_bp.route('/class/<int:class_id>', methods=['GET'])
 @token_required
 def class_report(current_user, class_id):
-    if current_user.role not in ['admin', 'teacher']:
-        return jsonify({'error': 'Access denied'}), 403
-
     classroom = Classroom.query.get_or_404(class_id)
+    from utils.grade_utils import get_kcse_grade
 
-    # Group grades by subject
-    results = db.session.query(
-        Subject.name,
-        func.avg(Grade.score).label('avg_score'),
-        func.count(Grade.grade_id).label('num_entries')
-    ).join(Grade.subject).filter(Grade.class_id == class_id).group_by(Subject.name).all()
-    
+    students = Student.query.filter_by(class_id=class_id).all()
+    student_data = []
+
+    for s in students:
+        grades = Grade.query.filter_by(student_id=s.student_id).all()
+        if not grades:
+            continue
+
+        scores = [g.score for g in grades]
+        avg_score = round(sum(scores) / len(scores), 2)
+        mean_grade = get_kcse_grade(avg_score)
+
+        student_data.append({
+            'student_id': s.student_id,
+            'name': s.user.name,
+            'grades': [{
+                'subject': g.subject.name,
+                'score': g.score,
+                'grade': get_kcse_grade(g.score),
+                'term': g.term,
+                'year': g.year,
+            } for g in grades],
+            'average_score': avg_score,
+            'mean_grade': mean_grade
+        })
+
+    # ✅ Ranking by average
+    sorted_students = sorted(student_data, key=lambda s: s['average_score'], reverse=True)
+    for i, s in enumerate(sorted_students, start=1):
+        s['position'] = i
+
     return jsonify({
         'class_id': classroom.class_id,
         'class_name': classroom.class_name,
-        'subjects': [{
-            'subject': r.name,
-            'average_score': round(r.avg_score, 2),
-            'entries': r.num_entries
-        } for r in results]
+        'students': sorted_students
     }), 200
+
+
 @report_bp.route('/export/student/<int:student_id>', methods=['GET'])
 @token_required
-def export_student_pdf(current_user, student_id):
+def export_student_report(current_user, student_id):
+    from reportlab.pdfgen import canvas
+    from reportlab.lib.pagesizes import A4
+    import io
+    from utils.grade_utils import get_kcse_grade
+
     student = Student.query.get_or_404(student_id)
-
-    if current_user.role not in ['admin', 'teacher'] and current_user.user_id != student.user_id:
-        return jsonify({'error': 'Access denied'}), 403
-
+    class_id = student.class_id
+    classroom = Classroom.query.get(class_id)
     grades = Grade.query.filter_by(student_id=student_id).all()
 
+    # === Compute mean score and grade for this student
+    scores = [g.score for g in grades]
+    avg_score = round(sum(scores) / len(scores), 2) if scores else 0.0
+    mean_grade = get_kcse_grade(avg_score)
+
+    # === Rank logic
+    all_students = Student.query.filter_by(class_id=class_id).all()
+    ranked = []
+    for s in all_students:
+        g = Grade.query.filter_by(student_id=s.student_id).all()
+        if g:
+            s_avg = round(sum(gr.score for gr in g) / len(g), 2)
+            ranked.append((s.student_id, s_avg))
+
+    # Sort by avg descending
+    ranked.sort(key=lambda tup: tup[1], reverse=True)
+
+    # Find position
+    position = next((i + 1 for i, (sid, _) in enumerate(ranked) if sid == student_id), None)
+
+    # === Begin PDF
     buffer = io.BytesIO()
     p = canvas.Canvas(buffer, pagesize=A4)
     width, height = A4
+    y = height - 40
 
     p.setFont("Helvetica-Bold", 14)
-    p.drawString(100, height - 50, f"Academic Report for {student.user.name}")
-    p.setFont("Helvetica", 10)
-    p.drawString(100, height - 70, f"Admission: {student.admission_number}")
-    p.drawString(100, height - 85, f"Class: {student.classroom.class_name if student.classroom else 'N/A'}")
+    p.drawString(60, y, f"KCSE Report Card")
+    y -= 20
 
-    y = height - 120
+    p.setFont("Helvetica", 10)
+    p.drawString(60, y, f"Name: {student.user.name}")
+    p.drawString(300, y, f"Adm No: {student.admission_number}")
+    y -= 15
+    p.drawString(60, y, f"Class: {classroom.class_name if classroom else 'N/A'}")
+    y -= 15
+    p.drawString(60, y, f"Mean Score: {avg_score}")
+    p.drawString(200, y, f"Mean Grade: {mean_grade}")
+    p.drawString(350, y, f"Position: {position}{ordinal(position)}")
+    y -= 25
+
+    # Table header
     p.setFont("Helvetica-Bold", 10)
-    p.drawString(100, y, "Subject     Score     Term     Year")
-    p.setFont("Helvetica", 10)
+    p.drawString(60, y, "Subject      Score    Grade    Term    Year    Teacher")
+    y -= 15
 
+    # Table rows
+    p.setFont("Helvetica", 9)
     for g in grades:
-        y -= 15
-        line = f"{g.subject.name:15} {g.score:<5} {g.term:<10} {g.year}"
-        p.drawString(100, y, line)
+        if y < 40:
+            p.showPage()
+            y = height - 40
+        p.drawString(60, y, f"{g.subject.name[:12]:<12} {g.score:<7} {get_kcse_grade(g.score):<7} {g.term:<6} {g.year:<5} {g.teacher.user.name[:20]}")
+        y -= 13
 
     p.save()
     buffer.seek(0)
 
-    return send_file(buffer, as_attachment=True, download_name="student_report.pdf", mimetype='application/pdf')
+    return send_file(
+        buffer,
+        as_attachment=True,
+        download_name=f"{student.user.name}_report.pdf",
+        mimetype='application/pdf'
+    )
