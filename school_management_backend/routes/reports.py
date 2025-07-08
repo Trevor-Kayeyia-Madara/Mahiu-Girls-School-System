@@ -13,6 +13,15 @@ from reportlab.lib.pagesizes import A4
 
 report_bp = Blueprint('reports', __name__)
 
+def ordinal(n):
+    if not isinstance(n, int):
+        return ''
+    if 11 <= (n % 100) <= 13:
+        return 'th'
+    return {1: 'st', 2: 'nd', 3: 'rd'}.get(n % 10, 'th')
+
+
+
 # 📄 Student academic report
 @report_bp.route('/student/<int:student_id>', methods=['GET'])
 @token_required
@@ -36,7 +45,7 @@ def student_report(current_user, student_id):
 
     return jsonify({
         'student_id': student.student_id,
-        'name': student.user.name,
+        'name': student.first_name,
         'class': student.classroom.class_name if student.classroom else None,
         'average_score': avg_score,
         'grades': subjects
@@ -130,7 +139,7 @@ def export_student_report(current_user, student_id):
     y -= 20
 
     p.setFont("Helvetica", 10)
-    p.drawString(60, y, f"Name: {student.user.name}")
+    p.drawString(60, y, f"Name: {student.first_name}")
     p.drawString(300, y, f"Adm No: {student.admission_number}")
     y -= 15
     p.drawString(60, y, f"Class: {classroom.class_name if classroom else 'N/A'}")
@@ -160,6 +169,6 @@ def export_student_report(current_user, student_id):
     return send_file(
         buffer,
         as_attachment=True,
-        download_name=f"{student.user.name}_report.pdf",
+        download_name=f"{student.first_name}_report.pdf",
         mimetype='application/pdf'
     )

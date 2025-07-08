@@ -17,10 +17,14 @@ def get_all_students(current_user):
     students = Student.query.all()
     return jsonify([{
         'id': s.student_id,
-        'first_name': s.first_name,  # Updated to include first_name
-        'last_name': s.last_name,    # Updated to include last_name
-        'email': s.user.email,
+        'first_name': s.first_name,
+        'last_name': s.last_name,
         'admission_number': s.admission_number,
+        'gender': s.gender,
+        'dob': s.date_of_birth.isoformat() if s.date_of_birth else None,
+        'guardian_name': s.guardian_name,
+        'guardian_phone': s.guardian_phone,
+        'address': s.address,
         'class_id': s.class_id
     } for s in students]), 200
 
@@ -38,7 +42,6 @@ def get_student(current_user, student_id):
         'id': student.student_id,
         'first_name': student.first_name,  # Updated to include first_name
         'last_name': student.last_name,    # Updated to include last_name
-        'email': student.user.email,
         'admission_number': student.admission_number,
         'gender': student.gender,
         'dob': student.date_of_birth.isoformat() if student.date_of_birth else None,

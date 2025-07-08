@@ -8,7 +8,7 @@ interface Student {
   last_name: string;
   admission_number: string;
   gender: string; // Added gender
-  date_of_birth: string; // Added date_of_birth
+  dob: string; // Added date_of_birth
   guardian_name: string; // Added guardian_name
   guardian_phone: string; // Added guardian_phone
   address: string; // Added address
@@ -111,10 +111,11 @@ const downloadReportCard = async (studentId: number) => {
             {students.map((s) => (
               <tr key={s.id} className="border-t">
                 <td>{s.first_name}</td>
+                <td>{s.last_name}</td>
                 <td>{s.admission_number}</td>
                 <td>{getClassName(s.class_id)}</td>
                 <td>{s.gender}</td> {/* Display Gender */}
-                <td>{s.date_of_birth}</td> {/* Display Date of Birth */}
+                <td>{s.dob}</td> {/* Display Date of Birth */}
                 <td>{s.guardian_name}</td> {/* Display Guardian Name */}
                 <td>{s.guardian_phone}</td> {/* Display Guardian Phone */}
                 <td>{s.address}</td> {/* Display Address */}
