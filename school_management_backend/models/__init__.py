@@ -29,7 +29,6 @@ class Student(db.Model):
     class_id = db.Column(db.Integer, db.ForeignKey('classrooms.class_id'))
 
     grades = db.relationship('Grade', backref='student', cascade="all, delete")
-
 # === STAFF DATA ===
 class Staff(db.Model):
     __tablename__ = 'staff'

@@ -53,40 +53,25 @@ def get_student(current_user, student_id):
 @token_required
 def create_student(current_user):
     if current_user.role != 'admin':
-        return jsonify({'error': 'Only admin can add students'}), 403
+        return jsonify({'error': 'Unauthorized'}), 403
 
     data = request.get_json()
-    try:
-        # Step 1: Create user
-        user = User(
-            name=f"{data['first_name']} {data['last_name']}",  # Combine first and last name
-            email=data['email'],
-            password=data['password'],
-            role='student'
-        )
-        db.session.add(user)
-        db.session.flush()  # Needed to get user.user_id
 
-        # Step 2: Create student
-        student = Student(
-            user_id=user.user_id,
-            admission_number=data['admission_number'],
-            first_name=data['first_name'],  # Added first_name
-            last_name=data['last_name'],    # Added last_name
-            gender=data['gender'],
-            date_of_birth=datetime.strptime(data['date_of_birth'], '%Y-%m-%d'),
-            guardian_name=data.get('guardian_name'),
-            guardian_phone=data.get('guardian_phone'),
-            address=data.get('address'),
-            class_id=data['class_id']
-        )
-        db.session.add(student)
-        db.session.commit()
+    student = Student(
+        admission_number=data['admission_number'],
+        first_name=data['first_name'],
+        last_name=data['last_name'],
+        gender=data['gender'],
+       date_of_birth=datetime.strptime(data['date_of_birth'], '%Y-%m-%d').date(),
+        guardian_name=data.get('guardian_name'),
+        guardian_phone=data.get('guardian_phone'),
+        address=data.get('address'),
+        class_id=data['class_id']
+    )
+    db.session.add(student)
+    db.session.commit()
+    return jsonify({'message': 'Student created'}), 201
 
-        return jsonify({'message': 'Student created successfully'}), 201
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'error': str(e)}), 400
 
 # ✏️ PUT update student
 @student_bp.route('/<int:student_id>', methods=['PUT'])
