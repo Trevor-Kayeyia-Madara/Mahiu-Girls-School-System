@@ -95,6 +95,28 @@ const handleDragEnd = (result: DropResult) => {
 
   setTimetable(reordered)
 }
+const groupTimetableByDayAndTime = (entries: TimetableEntry[]) => {
+  const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
+  const timeMap: Record<string, Record<string, TimetableEntry | null>> = {}
+
+  const allTimes = new Set<string>()
+
+  for (const entry of entries) {
+    const timeSlot = `${entry.start_time} - ${entry.end_time}`
+    allTimes.add(timeSlot)
+
+    if (!timeMap[timeSlot]) {
+      timeMap[timeSlot] = {}
+    }
+
+    timeMap[timeSlot][entry.day] = entry
+  }
+
+  const sortedTimes = Array.from(allTimes).sort()
+
+  return { sortedTimes, timeMap, days }
+}
+const grouped = groupTimetableByDayAndTime(timetable)
 
   return (
     <AdminLayout>
@@ -179,6 +201,48 @@ const handleDragEnd = (result: DropResult) => {
                 🧾 Export to PDF
         </button>
           </div>
+                {selectedClass && (
+  <>
+    {/* ...Add Slot Form & Button */}
+
+    <div className="overflow-x-auto mt-6">
+      <h2 className="text-xl font-semibold mb-2">📅 Weekly Timetable</h2>
+
+      <table className="w-full table-fixed border bg-white text-sm">
+        <thead className="bg-gray-100">
+          <tr>
+            <th className="w-32 p-2 border">Time</th>
+            {grouped.days.map((day) => (
+              <th key={day} className="w-1/5 p-2 border">{day}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {grouped.sortedTimes.map((time) => (
+            <tr key={time}>
+              <td className="border p-2 font-semibold">{time}</td>
+              {grouped.days.map((day) => {
+                const entry = grouped.timeMap[time]?.[day]
+                return (
+                  <td key={day} className="border p-2 align-top">
+                    {entry ? (
+                      <>
+                        <div className="font-medium">{entry.subject}</div>
+                        <div className="text-xs text-gray-600">{entry.teacher || '—'}</div>
+                      </>
+                    ) : (
+                      <span className="text-gray-400">—</span>
+                    )}
+                  </td>
+                )
+              })}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </>
+)}
 
           {/* Timetable Grid */}
           <div className="overflow-x-auto">
