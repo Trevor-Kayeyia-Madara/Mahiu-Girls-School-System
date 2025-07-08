@@ -12,6 +12,7 @@ from .announcements import announcement_bp
 from .reports import report_bp
 from .test import test_bp
 from .teacher_subject import ts_bp
+from .timetable import timetable_bp
 
 def init_routes(app):
     app.register_blueprint(auth_bp, url_prefix='/api/v1/auth')
@@ -26,3 +27,4 @@ def init_routes(app):
     app.register_blueprint(report_bp, url_prefix='/api/v1/reports')
     app.register_blueprint(test_bp,url_prefix='/api/v1/test')
     app.register_blueprint(ts_bp, url_prefix='/api/v1/teacher-subjects')
+    app.register_blueprint(timetable_bp, url_prefix='/api/v1/timetable')

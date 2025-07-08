@@ -81,6 +81,22 @@ class TeacherSubject(db.Model):
         db.UniqueConstraint('teacher_id', 'subject_id', 'class_id'),
     )
 
+# === TIMETABLE ENTRY ===
+class TimetableEntry(db.Model):
+    __tablename__ = 'timetable_entries'
+    id = db.Column(db.Integer, primary_key=True)
+
+    class_id = db.Column(db.Integer, db.ForeignKey('classrooms.class_id'), nullable=False)
+    subject_id = db.Column(db.Integer, db.ForeignKey('subjects.subject_id'), nullable=False)
+    day = db.Column(db.String(10), nullable=False)  # Monday - Friday
+    start_time = db.Column(db.Time, nullable=False)
+    end_time = db.Column(db.Time, nullable=False)
+    teacher_id = db.Column(db.Integer, db.ForeignKey('staff.staff_id'), nullable=True)  # optional override
+
+    classroom = db.relationship('Classroom', backref='timetable')
+    subject = db.relationship('Subject')
+    teacher = db.relationship('Staff')
+
 # === GRADES ===
 class Grade(db.Model):
     __tablename__ = 'grades'
