@@ -33,6 +33,13 @@ export default function AdminClassAssignments() {
   const [assignments, setAssignments] = useState<Assignment[]>([])
   const [loading, setLoading] = useState(true)
 
+  const payload = assignments.map(a => ({
+  teacher_id: a.teacher_id,
+  subject_id: a.subject_id,
+  class_id: a.class_id
+}));
+
+
   useEffect(() => {
     const fetchAll = async () => {
       const [classRes, staffRes, subjectRes, assignRes] = await Promise.all([
@@ -77,6 +84,7 @@ export default function AdminClassAssignments() {
   const handleSave = async () => {
     try {
       // Save subject teacher assignments
+      console.log('Posting teacher-subject assignments:', payload)
       await axios.post('http://localhost:5001/api/v1/teacher-subjects/bulk', assignments)
 
       // Save class teacher assignments one by one
