@@ -64,6 +64,37 @@ export default function AdminGradebook() {
     setSelectedClass(class_id)
     fetchGrades(class_id)
   }
+  const exportToCSV = () => {
+  const csv = [
+    ['Student', 'Subject', 'Score', 'Grade', 'Term', 'Year'],
+    ...grades.map(g =>
+      [g.student_name, g.subject, g.score, g.grade, g.term, g.year]
+    ),
+  ].map(row => row.join(',')).join('\n')
+
+  const blob = new Blob([csv], { type: 'text/csv' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = 'kcse_gradebook.csv'
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+}
+const exportToPDF = async () => {
+  if (!selectedClass) return
+  const response = await axios.get(
+    `http://localhost:5001/api/v1/reports/export/class/${selectedClass}`,
+    { responseType: 'blob' }
+  )
+  const url = URL.createObjectURL(new Blob([response.data]))
+  const link = document.createElement('a')
+  link.href = url
+  link.setAttribute('download', 'kcse_gradebook.pdf')
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+}
 
   return (
     <AdminLayout>
@@ -112,7 +143,22 @@ export default function AdminGradebook() {
         </table>
       )}
 
-      {grades.length === 0 && selectedClass && <p>No grades found for selected class.</p>}
+      {grades.length > 0 && (
+  <div className="flex gap-4 mt-4">
+    <button
+      onClick={exportToCSV}
+      className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+    >
+      ⬇️ Export CSV
+    </button>
+    <button
+      onClick={exportToPDF}
+      className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700"
+    >
+      🧾 Export PDF
+    </button>
+  </div>
+)}
     </AdminLayout>
   )
 }
