@@ -62,7 +62,19 @@ export default function AdminStudents() {
       console.error('Error deleting student:', error);
     }
   };
-
+const downloadReportCard = async (studentId: number) => {
+  const res = await axios.get(
+    `http://localhost:5001/api/v1/reports/export/student/${studentId}`,
+    { responseType: 'blob' }
+  )
+  const blob = new Blob([res.data])
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = 'kcse_report_card.pdf'
+  a.click()
+  URL.revokeObjectURL(url)
+}
   return (
     <div>
       <h1 className="text-2xl font-bold mb-4">👥 Manage Students</h1>
@@ -122,6 +134,13 @@ export default function AdminStudents() {
                   >
                     Delete
                   </button>
+                  <button
+                          className="text-blue-600 hover:underline"
+                          onClick={() => downloadReportCard(s.id)}
+                        >
+                          🧾 Report
+                      </button>
+
                 </td>
               </tr>
             ))}
