@@ -127,3 +127,10 @@ class Announcement(db.Model):
     content = db.Column(db.Text, nullable=False)
     target_audience = db.Column(db.String(20))  # 'students', 'parents', 'staff', 'all'
     posted_at = db.Column(db.DateTime, server_default=db.func.now())
+
+# = = = = Settings =====
+
+class Setting(db.Model):
+    __tablename__ = 'settings'
+    key = db.Column(db.String(50), primary_key=True)
+    value = db.Column(db.String(200))
