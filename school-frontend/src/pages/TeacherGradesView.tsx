@@ -56,19 +56,26 @@ export default function TeacherGradesView() {
   }, [])
 
   const fetchGrades = async () => {
-    if (!selectedClass || !selectedSubject) return
-    setLoading(true)
-    try {
-      const res = await axios.get(
-        `/api/v1/grades/class/${selectedClass}/subject/${selectedSubject}`
-      )
-      setGrades(res.data)
-    } catch (err) {
-      console.error('Failed to load grades', err)
-    } finally {
-      setLoading(false)
-    }
+  if (!selectedClass || !selectedSubject) return
+  setLoading(true)
+  try {
+    const res = await axios.get(
+      `/api/v1/grades/class/${selectedClass}/subject/${selectedSubject}`,
+      {
+        params: {
+          term: selectedTerm,
+          year: selectedYear,
+        },
+      }
+    )
+    setGrades(res.data)
+  } catch (err) {
+    console.error('Failed to load grades', err)
+  } finally {
+    setLoading(false)
   }
+}
+
 const exportToCSV = () => {
   if (grades.length === 0) return
 
