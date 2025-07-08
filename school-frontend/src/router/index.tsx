@@ -13,6 +13,7 @@ import AdminGradebook from '../pages/AdminGradeBook'
 import AdminTimetable from '../pages/AdminTimetable'
 import AdminPerformance from '../pages/AdminPerformance'
 import AdminSettings from '../pages/AdminSettings'
+import AdminMessages from '../pages/AdminMessages'
 
 export default function AppRouter() {
   return (
@@ -75,7 +76,7 @@ export default function AppRouter() {
   path="/admin/messages"
   element={
     <ProtectedRoute allowedRoles={['admin']}>
-      <AdminGradebook />
+      <AdminMessages />
     </ProtectedRoute>
   }
 />
