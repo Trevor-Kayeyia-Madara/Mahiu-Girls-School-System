@@ -35,6 +35,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
       {/* Main content */}
       <main className="flex-1 p-6 bg-gray-50">
         <div className="text-sm text-gray-500 mb-4">Logged in as {user?.email}</div>
+        
         {children}
       </main>
     </div>
