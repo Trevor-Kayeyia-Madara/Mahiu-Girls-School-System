@@ -24,35 +24,22 @@ def get_assignments(current_user):
 	]), 200
 
  # POST
-@ts_bp.route('/bulk', methods=['POST'])
+@ts_bp.route('/', methods=['POST'])
 @token_required
-def bulk_assign(current_user):
+def assign_teacher_subject(current_user):
     if current_user.role != 'admin':
         return jsonify({'error': 'Unauthorized'}), 403
 
+    data = request.get_json()
     try:
-        data = request.get_json()
-
-        if not isinstance(data, list):
-            return jsonify({'error': 'Expected a list of assignments'}), 400
-
-        for i, item in enumerate(data):
-            if not all(k in item for k in ['teacher_id', 'subject_id', 'class_id']):
-                return jsonify({'error': f'Missing keys in item {i}: {item}'}), 400
-
-        TeacherSubject.query.delete()
-
-        for item in data:
-            ts = TeacherSubject(
-                teacher_id=item['teacher_id'],
-                subject_id=item['subject_id'],
-                class_id=item['class_id']
-            )
-            db.session.add(ts)
-
+        ts = TeacherSubject(
+            teacher_id=data['teacher_id'],
+            subject_id=data['subject_id'],
+            class_id=data['class_id']
+        )
+        db.session.add(ts)
         db.session.commit()
-        return jsonify({'message': 'Teacher-subject-class assignments saved'}), 200
-
+        return jsonify({'message': 'Assignment created'}), 201
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': f'Internal server error: {str(e)}'}), 500
+        return jsonify({'error': str(e)}), 400

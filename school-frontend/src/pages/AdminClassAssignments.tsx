@@ -1,17 +1,15 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useState } from 'react'
 import axios from 'axios'
-import AdminLayout from '../layouts/AdminLayout'
 
 interface Teacher {
   staff_id: number
   user: { name: string }
-  role: string
 }
 
 interface Subject {
   subject_id: number
   name: string
-  group: string
 }
 
 interface Classroom {
@@ -20,168 +18,154 @@ interface Classroom {
   class_teacher_id?: number
 }
 
-interface Assignment {
-  class_id: number
-  subject_id: number
-  teacher_id: number
-}
-
 export default function AdminClassAssignments() {
-  const [classrooms, setClassrooms] = useState<Classroom[]>([])
   const [teachers, setTeachers] = useState<Teacher[]>([])
   const [subjects, setSubjects] = useState<Subject[]>([])
-  const [assignments, setAssignments] = useState<Assignment[]>([])
-  const [loading, setLoading] = useState(true)
-
-  const payload = assignments.map(a => ({
-  teacher_id: a.teacher_id,
-  subject_id: a.subject_id,
-  class_id: a.class_id
-}));
-
+  const [classes, setClasses] = useState<Classroom[]>([])
+  const [classTeachers, setClassTeachers] = useState<Record<number, number>>({})
+  const [assignments, setAssignments] = useState<Record<string, number>>({})
 
   useEffect(() => {
     const fetchAll = async () => {
-      const [classRes, staffRes, subjectRes, assignRes] = await Promise.all([
-        axios.get('http://localhost:5001/api/v1/classrooms'),
-        axios.get('http://localhost:5001/api/v1/staff'),
+      const [tRes, sRes, cRes] = await Promise.all([
+        axios.get('http://localhost:5001/api/v1/staff?role=teacher'),
         axios.get('http://localhost:5001/api/v1/subjects'),
-        axios.get('http://localhost:5001/api/v1/teacher-subjects')
+        axios.get('http://localhost:5001/api/v1/classrooms'),
       ])
-      setClassrooms(classRes.data)
-      setTeachers(staffRes.data.filter((t: Teacher) => t.role === 'teacher'))
-      setSubjects(subjectRes.data)
-      setAssignments(assignRes.data)
-      setLoading(false)
+      setTeachers(tRes.data)
+      setSubjects(sRes.data)
+      setClasses(cRes.data)
+
+      const ctMap: Record<number, number> = {}
+      cRes.data.forEach((cls: Classroom) => {
+        if (cls.class_teacher_id) ctMap[cls.class_id] = cls.class_teacher_id
+      })
+      setClassTeachers(ctMap)
     }
 
     fetchAll()
   }, [])
 
-  const updateSubjectAssignment = (class_id: number, subject_id: number, teacher_id: number) => {
-    setAssignments(prev => {
-      const exists = prev.find(a => a.class_id === class_id && a.subject_id === subject_id)
-      if (exists) {
-        return prev.map(a =>
-          a.class_id === class_id && a.subject_id === subject_id
-            ? { ...a, teacher_id }
-            : a
-        )
-      } else {
-        return [...prev, { class_id, subject_id, teacher_id }]
-      }
-    })
+  const handleTeacherChange = (classId: number, subjectId: number, teacherId: number) => {
+    setAssignments(prev => ({
+      ...prev,
+      [`${classId}_${subjectId}`]: teacherId
+    }))
   }
 
-  const updateClassTeacher = (class_id: number, teacher_id: number) => {
-    setClassrooms(prev =>
-      prev.map(c =>
-        c.class_id === class_id ? { ...c, class_teacher_id: teacher_id } : c
-      )
-    )
+  const handleClassTeacherChange = (classId: number, teacherId: number) => {
+    setClassTeachers(prev => ({
+      ...prev,
+      [classId]: teacherId
+    }))
   }
 
   const handleSave = async () => {
     try {
-      // Save subject teacher assignments
-      console.log('Posting teacher-subject assignments:', payload)
-      await axios.post('http://localhost:5001/api/v1/teacher-subjects/bulk', assignments)
-
-      // Save class teacher assignments one by one
-      for (const cls of classrooms) {
-        await axios.put(`http://localhost:5001/api/v1/classrooms/${cls.class_id}`, {
-          class_teacher_id: cls.class_teacher_id
+      // Save class teacher changes
+      for (const classId in classTeachers) {
+        await axios.put(`http://localhost:5001/api/v1/classrooms/${classId}`, {
+          class_teacher_id: classTeachers[classId]
         })
       }
 
-      alert('✅ All assignments saved successfully')
-    } catch (err) {
-      console.error(err)
-      alert('❌ Error saving assignments')
+      // Save subject-teacher assignments
+      for (const key in assignments) {
+        const [classId, subjectId] = key.split('_').map(Number)
+        const teacherId = assignments[key]
+
+        if (teacherId)
+          await axios.post('http://localhost:5001/api/v1/teacher-subjects', {
+            class_id: classId,
+            subject_id: subjectId,
+            teacher_id: teacherId
+          })
+      }
+
+      alert('✅ Assignments saved!')
+    } catch (err: any) {
+      alert(err.response?.data?.error || '❌ Error saving assignments')
     }
   }
 
   return (
-    <AdminLayout>
-      <h1 className="text-2xl font-bold mb-4">🏫 Assign Class & Subject Teachers</h1>
+    <div className="p-4">
+      <h1 className="text-2xl font-bold mb-6">🎓 Assign Teachers to Subjects & Classes</h1>
 
-      {loading ? (
-        <p>Loading...</p>
-      ) : (
-        <>
-          {classrooms.map(cls => (
-            <div key={cls.class_id} className="mb-6 border rounded bg-white shadow p-4">
-              <h2 className="text-lg font-semibold mb-2">{cls.class_name}</h2>
+      {classes.map((cls) => (
+        <div key={cls.class_id} className="mb-6 bg-white shadow rounded p-4">
+          <h2 className="text-lg font-semibold mb-3">{cls.class_name}</h2>
 
-              {/* Class Teacher */}
-              <div className="mb-4">
-                <label className="block font-medium mb-1">👩‍🏫 Class Teacher</label>
-                <select
-                  value={cls.class_teacher_id || ''}
-                  onChange={e => updateClassTeacher(cls.class_id, parseInt(e.target.value))}
-                  className="border p-2 rounded w-full"
-                >
-                  <option value="">-- Select Class Teacher --</option>
-                  {teachers.map(t => (
-                    <option key={t.staff_id} value={t.staff_id}>
-                      {t.user.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+          {/* Class Teacher Assignment */}
+          <div className="mb-4">
+            <label className="block font-medium mb-1">Class Teacher</label>
+            <select
+              value={classTeachers[cls.class_id] ?? ''}
+              onChange={e =>
+                handleClassTeacherChange(cls.class_id, Number(e.target.value))
+              }
+              className="border p-2 rounded w-full"
+            >
+              <option value="">Select Teacher</option>
+              {teachers.map(t => (
+                <option key={`ct-${cls.class_id}-${t.staff_id}`} value={t.staff_id}>
+                  {t.user.name}
+                </option>
+              ))}
+            </select>
+          </div>
 
-              {/* Subject Teachers */}
-              <table className="w-full table-auto text-sm border">
-                <thead className="bg-gray-100 text-left">
-                  <tr>
-                    <th className="p-2">📘 Subject</th>
-                    <th className="p-2">Assigned Teacher</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {subjects.map(subj => {
-                    const current = assignments.find(
-                      a => a.class_id === cls.class_id && a.subject_id === subj.subject_id
-                    )
-                    return (
-                      <tr key={subj.subject_id} className="border-t">
-                        <td className="p-2">{subj.name}</td>
-                        <td className="p-2">
-                          <select
-                            value={current?.teacher_id || ''}
-                            onChange={e =>
-                              updateSubjectAssignment(
-                                cls.class_id,
-                                subj.subject_id,
-                                parseInt(e.target.value)
-                              )
-                            }
-                            className="border p-1 rounded w-full"
-                          >
-                            <option value="">-- Select --</option>
-                            {teachers.map(t => (
-                              <option key={t.staff_id} value={t.staff_id}>
-                                {t.user.name}
-                              </option>
-                            ))}
-                          </select>
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
+          {/* Subject-Teacher Table */}
+          <table className="w-full table-auto border text-left">
+            <thead className="bg-gray-100">
+              <tr>
+                <th className="p-2">Subject</th>
+                <th className="p-2">Assigned Teacher</th>
+              </tr>
+            </thead>
+            <tbody>
+           {subjects.map(subject => {
+  if (!subject || typeof subject.subject_id === 'undefined') return null;
+
+  const key = `${cls.class_id}_${subject.subject_id}`
+
+  return (
+    <tr key={key}>
+      <td className="p-2">{subject.name}</td>
+      <td className="p-2">
+        <select
+          value={assignments[key] ?? ''}
+          onChange={e =>
+            handleTeacherChange(cls.class_id, subject.subject_id, Number(e.target.value))
+          }
+          className="border p-1 rounded w-full"
+        >
+          <option value="">Select Teacher</option>
+          {teachers.map(t => (
+            <option
+              key={`assign-${cls.class_id}-${subject.subject_id}-${t.staff_id}`}
+              value={t.staff_id}
+            >
+              {t.user.name}
+            </option>
           ))}
+        </select>
+      </td>
+    </tr>
+  );
+})}
 
-          <button
-            onClick={handleSave}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-          >
-            💾 Save All Assignments
-          </button>
-        </>
-      )}
-    </AdminLayout>
+            </tbody>
+          </table>
+        </div>
+      ))}
+
+      <button
+        onClick={handleSave}
+        className="mt-4 px-6 py-2 bg-blue-600 text-white rounded"
+      >
+        💾 Save All Assignments
+      </button>
+    </div>
   )
 }
