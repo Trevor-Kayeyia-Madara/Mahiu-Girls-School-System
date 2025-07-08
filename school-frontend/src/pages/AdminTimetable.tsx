@@ -2,6 +2,13 @@
 import { useEffect, useState } from 'react'
 import axios from 'axios'
 import AdminLayout from '../layouts/AdminLayout'
+import {
+  DragDropContext,
+  Droppable,
+  Draggable
+} from '@hello-pangea/dnd'
+import type { DropResult } from '@hello-pangea/dnd'
+
 
 interface Classroom {
   class_id: number
@@ -79,6 +86,15 @@ const handleAdd = async () => {
     await axios.delete(`http://localhost:5001/api/v1/timetable/${id}`)
     if (selectedClass) fetchTimetable(selectedClass)
   }
+const handleDragEnd = (result: DropResult) => {
+  if (!result.destination) return
+
+  const reordered = Array.from(timetable)
+  const [moved] = reordered.splice(result.source.index, 1)
+  reordered.splice(result.destination.index, 0, moved)
+
+  setTimetable(reordered)
+}
 
   return (
     <AdminLayout>
@@ -176,33 +192,41 @@ const handleAdd = async () => {
                   <th className="p-2">Action</th>
                 </tr>
               </thead>
-              <tbody>
-                {timetable.map((slot) => (
-                  <tr key={slot.id} className="border-t">
-                    <td className="p-2">{slot.day}</td>
-                    <td className="p-2">
-                      {slot.start_time} - {slot.end_time}
-                    </td>
-                    <td className="p-2">{slot.subject}</td>
-                    <td className="p-2">{slot.teacher || 'N/A'}</td>
-                    <td className="p-2">
-                      <button
-                        onClick={() => handleDelete(slot.id)}
-                        className="text-red-600 hover:underline"
-                      >
-                        Delete
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-                {timetable.length === 0 && (
-                  <tr>
-                    <td colSpan={5} className="p-4 text-center text-gray-500">
-                      No timetable entries yet.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
+              <DragDropContext onDragEnd={handleDragEnd}>
+  <Droppable droppableId="timetable">
+    {(provided) => (
+      <tbody ref={provided.innerRef} {...provided.droppableProps}>
+        {timetable.map((slot, index) => (
+          <Draggable key={slot.id} draggableId={String(slot.id)} index={index}>
+            {(provided) => (
+              <tr
+                ref={provided.innerRef}
+                {...provided.draggableProps}
+                {...provided.dragHandleProps}
+                className="border-t bg-white hover:bg-gray-50"
+              >
+                <td className="p-2">{slot.day}</td>
+                <td className="p-2">{slot.start_time} - {slot.end_time}</td>
+                <td className="p-2">{slot.subject}</td>
+                <td className="p-2">{slot.teacher || 'N/A'}</td>
+                <td className="p-2">
+                  <button
+                    onClick={() => handleDelete(slot.id)}
+                    className="text-red-600 hover:underline"
+                  >
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            )}
+          </Draggable>
+        ))}
+        {provided.placeholder}
+      </tbody>
+    )}
+  </Droppable>
+</DragDropContext>
+
             </table>
           </div>
         </>
