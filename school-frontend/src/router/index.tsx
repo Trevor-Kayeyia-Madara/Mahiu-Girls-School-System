@@ -9,6 +9,7 @@ import AdminLayout from '../layouts/AdminLayout'
 import AdminStudents from '../pages/AdminStudents'
 import AdminStaff from '../pages/AdminStaff'
 import AdminClassAssignments from '../pages/AdminClassAssignments'
+import AdminGradebook from '../pages/AdminGradeBook'
 
 export default function AppRouter() {
   return (
@@ -35,7 +36,14 @@ export default function AppRouter() {
     </ProtectedRoute>
   }
 />
-
+    <Route
+  path="/admin/reports"
+  element={
+    <ProtectedRoute allowedRoles={['admin']}>
+      <AdminGradebook />
+    </ProtectedRoute>
+  }
+/>
         <Route
           path="/admin/dashboard"
           element={
