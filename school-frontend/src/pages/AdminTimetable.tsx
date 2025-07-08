@@ -145,6 +145,23 @@ const handleAdd = async () => {
             >
               Add to Timetable
             </button>
+            <button
+                onClick={async () => {
+                  const res = await axios.get(
+                    `http://localhost:5001/api/v1/timetable/export/${selectedClass}`,
+                    { responseType: 'blob' }
+                  )
+                  const url = window.URL.createObjectURL(new Blob([res.data]))
+                  const link = document.createElement('a')
+                  link.href = url
+                  link.setAttribute('download', 'class_timetable.pdf')
+                  document.body.appendChild(link)
+                  link.click()
+                }}
+                className="mb-4 ml-4 px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700"
+              >
+                🧾 Export to PDF
+        </button>
           </div>
 
           {/* Timetable Grid */}
