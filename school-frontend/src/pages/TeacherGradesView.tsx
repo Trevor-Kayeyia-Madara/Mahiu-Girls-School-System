@@ -66,6 +66,31 @@ export default function TeacherGradesView() {
       setLoading(false)
     }
   }
+const exportToCSV = () => {
+  if (grades.length === 0) return
+
+  const headers = ['Name', 'Admission Number', 'Score', 'Grade', 'Term', 'Year']
+  const rows = grades.map((g) => [
+    g.name,
+    g.admission_number,
+    g.score,
+    getKCSEGrade(g.score),
+    g.term,
+    g.year,
+  ])
+
+  const csvContent =
+    'data:text/csv;charset=utf-8,' +
+    [headers, ...rows].map((e) => e.join(',')).join('\n')
+
+  const encodedUri = encodeURI(csvContent)
+  const link = document.createElement('a')
+  link.setAttribute('href', encodedUri)
+  link.setAttribute('download', 'grades.csv')
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+}
 
   return (
     <TeacherLayout>
@@ -105,6 +130,14 @@ export default function TeacherGradesView() {
         >
           Load Grades
         </button>
+        <button
+  onClick={exportToCSV}
+  disabled={grades.length === 0}
+  className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+>
+  📤 Export to CSV
+</button>
+
       </div>
 
       {loading ? (
