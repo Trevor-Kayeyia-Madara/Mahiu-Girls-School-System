@@ -33,12 +33,12 @@ export default function TeacherDashboard() {
           {assignments.map((a, idx) => (
             <li key={idx} className="border-b pb-2">
               {a.subject} — {a.class}
-              <a
-                href={`/teacher/grades?class_id=${a.class_id}&subject_id=${a.subject_id}`}
-                className="ml-4 text-blue-600 hover:underline text-sm"
-              >
-                ➕ Enter Grades
-              </a>
+                      <a
+            href={`/teacher/grades?class_id=${a.class_id}&subject_id=${a.subject_id}`}
+          >
+            ➕ Enter Grades
+          </a>
+
             </li>
           ))}
           {assignments.length === 0 && (

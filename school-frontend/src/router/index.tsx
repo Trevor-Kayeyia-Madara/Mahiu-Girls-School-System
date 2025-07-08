@@ -14,6 +14,7 @@ import AdminTimetable from '../pages/AdminTimetable'
 import AdminPerformance from '../pages/AdminPerformance'
 import AdminSettings from '../pages/AdminSettings'
 import AdminMessages from '../pages/AdminMessages'
+import TeacherGradeEntry from '../pages/TeacherGradeEntry'
 
 export default function AppRouter() {
   return (
@@ -111,6 +112,14 @@ export default function AppRouter() {
           element={
             <ProtectedRoute allowedRoles={['teacher']}>
               <TeacherDashboard />
+            </ProtectedRoute>
+          }
+        />
+         <Route
+          path="/teacher/grades"
+          element={
+            <ProtectedRoute allowedRoles={['teacher']}>
+              <TeacherGradeEntry />
             </ProtectedRoute>
           }
         />
