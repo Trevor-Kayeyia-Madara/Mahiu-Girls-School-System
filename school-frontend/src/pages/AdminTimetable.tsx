@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useState } from 'react'
 import axios from 'axios'
 import AdminLayout from '../layouts/AdminLayout'
@@ -60,10 +61,19 @@ export default function AdminTimetable() {
     fetchTimetable(class_id)
   }
 
-  const handleAdd = async () => {
-    if (!selectedClass || !formData.subject_id) return
+const handleAdd = async () => {
+  if (selectedClass === null) return  // ✅ Guard clause
+
+  try {
+    await axios.post('http://localhost:5001/api/v1/timetable', {
+      class_id: selectedClass,
+      ...formData
+    })
     fetchTimetable(selectedClass)
+  } catch (err: any) {
+    alert(err.response?.data?.error || 'Failed to add slot')
   }
+}
 
   const handleDelete = async (id: number) => {
     await axios.delete(`http://localhost:5001/api/v1/timetable/${id}`)

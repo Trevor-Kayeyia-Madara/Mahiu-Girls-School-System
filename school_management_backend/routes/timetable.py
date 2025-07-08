@@ -25,7 +25,6 @@ def get_class_timetable(current_user, class_id):
         })
     return jsonify(result), 200
 
-# ➕ POST a new timetable entry
 @timetable_bp.route('/', methods=['POST'])
 @token_required
 def add_entry(current_user):
@@ -33,17 +32,53 @@ def add_entry(current_user):
         return jsonify({'error': 'Only admin can add timetable entries'}), 403
 
     data = request.get_json()
+
+    from datetime import time
+
+    new_day = data['day']
+    new_start = time.fromisoformat(data['start_time'])
+    new_end = time.fromisoformat(data['end_time'])
+
+    # ✅ Check conflicts for class
+    class_conflict = TimetableEntry.query.filter_by(
+        class_id=data['class_id'],
+        day=new_day
+    ).filter(
+        TimetableEntry.start_time < new_end,
+        TimetableEntry.end_time > new_start
+    ).first()
+
+    if class_conflict:
+        return jsonify({'error': 'Time conflict for this class'}), 400
+
+    # ✅ Check conflicts for teacher
+    teacher_id = data.get('teacher_id')
+
+    if teacher_id:
+        teacher_conflict = TimetableEntry.query.filter_by(
+            teacher_id=teacher_id,
+            day=new_day
+        ).filter(
+            TimetableEntry.start_time < new_end,
+            TimetableEntry.end_time > new_start
+        ).first()
+
+        if teacher_conflict:
+            return jsonify({'error': 'Teacher is already scheduled at that time'}), 400
+
+    # Save
     entry = TimetableEntry(
         class_id=data['class_id'],
         subject_id=data['subject_id'],
-        day=data['day'],
-        start_time=time.fromisoformat(data['start_time']),
-        end_time=time.fromisoformat(data['end_time']),
-        teacher_id=data.get('teacher_id')  # optional override
+        day=new_day,
+        start_time=new_start,
+        end_time=new_end,
+        teacher_id=teacher_id
     )
     db.session.add(entry)
     db.session.commit()
     return jsonify({'message': 'Timetable entry added'}), 201
+
 
 # ❌ DELETE entry
 @timetable_bp.route('/<int:entry_id>', methods=['DELETE'])
