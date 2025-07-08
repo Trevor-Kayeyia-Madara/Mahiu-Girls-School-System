@@ -1,3 +1,4 @@
+from datetime import datetime
 from app import db
 
 # === USER ACCOUNTS ===
@@ -112,11 +113,15 @@ class Grade(db.Model):
 # === MESSAGES ===
 class Message(db.Model):
     __tablename__ = 'messages'
-    message_id = db.Column(db.Integer, primary_key=True)
-    sender_id = db.Column(db.Integer, db.ForeignKey('users.user_id'), nullable=False)
-    recipient_id = db.Column(db.Integer, db.ForeignKey('users.user_id'), nullable=False)
-    message_text = db.Column(db.Text, nullable=False)
-    sent_at = db.Column(db.DateTime, server_default=db.func.now())
+    id = db.Column(db.Integer, primary_key=True)
+    sender_id = db.Column(db.Integer, db.ForeignKey('users.user_id'))
+    receiver_id = db.Column(db.Integer, db.ForeignKey('users.user_id'))
+    content = db.Column(db.Text)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    read = db.Column(db.Boolean, default=False)  # ✅ NEW FIELD
+
+    sender = db.relationship('User', foreign_keys=[sender_id])
+    receiver = db.relationship('User', foreign_keys=[receiver_id])
 
 # === ANNOUNCEMENTS ===
 class Announcement(db.Model):
