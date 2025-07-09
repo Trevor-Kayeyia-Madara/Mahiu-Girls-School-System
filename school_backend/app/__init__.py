@@ -32,10 +32,10 @@ def create_app():
     bcrypt.init_app(app)
 
     # 💡 IMPORTANT: Import models to register tables with SQLAlchemy
-    from app import models
+    from app import .models
 
     # 📦 Optionally register routes here
-    # from app.routes import init_routes
-    # init_routes(app)
+     from routes import init_routes
+     init_routes(app)
 
     return app
