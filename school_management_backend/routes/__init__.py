@@ -17,6 +17,7 @@ from .performance import performance_bp
 from .settings import settings_bp
 from .messages import message_bp
 from .teachers import teacher_bp
+from .class_assignment import class_assignment_bp
 
 def init_routes(app):
     app.register_blueprint(auth_bp, url_prefix='/api/v1/auth')
@@ -36,3 +37,4 @@ def init_routes(app):
     app.register_blueprint(settings_bp, url_prefix='/api/v1/settings')
     app.register_blueprint(message_bp, url_prefix='/api/v1/messages')
     app.register_blueprint(teacher_bp, url_prefix='/api/v1/teachers')
+    app.register_blueprint(class_assignment_bp, url_prefix='/api/v1/class-assignments')
