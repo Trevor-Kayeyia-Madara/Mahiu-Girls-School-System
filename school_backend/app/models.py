@@ -3,7 +3,7 @@
 #type: ignore
 
 from datetime import datetime
-from app import db # Assumes 'db' is initialized in your 'app/__init__.py' or 'app/app.py'
+from school_backend.app import db # Assumes 'db' is initialized in your 'app/__init__.py' or 'app/app.py'
 
 # =====================
 # === AUTH USERS ======
