@@ -10,3 +10,4 @@ from .class_assignment import ClassAssignment
 from .grade import Grade
 from .exam import Exam
 from .announcement import Announcement
+from .message import Message
