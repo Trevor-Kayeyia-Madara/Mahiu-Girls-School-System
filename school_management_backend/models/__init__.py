@@ -9,3 +9,4 @@ from .teacher_subject import TeacherSubject
 from .class_assignment import ClassAssignment
 from .grade import Grade
 from .exam import Exam
+from .announcement import Announcement
