@@ -51,3 +51,59 @@ def create_teacher(current_user):
     db.session.add(teacher)
     db.session.commit()
     return jsonify({'message': 'Teacher created successfully'}), 201
+
+@teacher_bp.route('/<int:teacher_id>', methods=['GET'])
+@token_required
+def get_teacher(current_user, teacher_id):
+    if current_user.role != 'admin':
+        return jsonify({'error': 'Unauthorized'}), 403
+
+    teacher = Teacher.query.get_or_404(teacher_id)
+    return jsonify({
+        'teacher_id': teacher.teacher_id,
+        'name': teacher.user.name,
+        'email': teacher.user.email,
+        'employee_number': teacher.employee_number,
+        'gender': teacher.gender,
+        'contact': teacher.contact,
+        'qualifications': teacher.qualifications
+    }), 200
+
+@teacher_bp.route('/<int:teacher_id>', methods=['PUT'])
+@token_required
+def update_teacher(current_user, teacher_id):
+    if current_user.role != 'admin':
+        return jsonify({'error': 'Unauthorized'}), 403
+
+    teacher = Teacher.query.get_or_404(teacher_id)
+    data = request.get_json()
+
+    # Update user info
+    if 'name' in data:
+        teacher.user.name = data['name']
+    if 'email' in data:
+        teacher.user.email = data['email']
+
+    # Update teacher profile
+    teacher.employee_number = data.get('employee_number', teacher.employee_number)
+    teacher.gender = data.get('gender', teacher.gender)
+    teacher.contact = data.get('contact', teacher.contact)
+    teacher.qualifications = data.get('qualifications', teacher.qualifications)
+
+    db.session.commit()
+    return jsonify({'message': 'Teacher updated successfully'}), 200
+
+@teacher_bp.route('/<int:teacher_id>', methods=['DELETE'])
+@token_required
+def delete_teacher(current_user, teacher_id):
+    if current_user.role != 'admin':
+        return jsonify({'error': 'Unauthorized'}), 403
+
+    teacher = Teacher.query.get_or_404(teacher_id)
+    user = teacher.user
+
+    db.session.delete(teacher)
+    db.session.delete(user)
+    db.session.commit()
+
+    return jsonify({'message': 'Teacher and associated user deleted'}), 200
