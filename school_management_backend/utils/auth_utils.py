@@ -2,7 +2,6 @@ import os
 import jwt
 from functools import wraps
 from flask import request, jsonify
-from app import app, db
 from models import User, Teacher, Parent
 
 SECRET_KEY = os.getenv("SECRET_KEY")  # use env variable in production
