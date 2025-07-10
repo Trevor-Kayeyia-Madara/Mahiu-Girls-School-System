@@ -9,3 +9,4 @@ class Classroom(db.Model):
 
     students = db.relationship('Student', backref='classroom')
     teacher_subjects = db.relationship('TeacherSubject', backref='classroom')
+    class_teacher = db.relationship('Teachers', backref='assigned_classrooms')

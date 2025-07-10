@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
 from app import db
-from models import Classroom
+from models import Classroom, Teacher
 from utils.auth_utils import token_required
 
 class_bp = Blueprint('classrooms', __name__)
@@ -75,3 +75,41 @@ def delete_class(current_user, class_id):
     db.session.delete(classroom)
     db.session.commit()
     return jsonify({'message': 'Classroom deleted'}), 200
+
+class_teacher_bp = Blueprint('class_teacher', __name__)
+
+# 🆕 Assign a class teacher
+@class_teacher_bp.route('/assign-teacher', methods=['POST'])
+@token_required
+def assign_class_teacher(current_user):
+    if current_user.role != 'admin':
+        return jsonify({'error': 'Unauthorized'}), 403
+
+    data = request.get_json()
+    class_id = data.get('class_id')
+    teacher_id = data.get('teacher_id')
+
+    if not class_id or not teacher_id:
+        return jsonify({'error': 'Missing fields'}), 400
+
+    classroom = Classroom.query.get_or_404(class_id)
+    classroom.class_teacher_id = teacher_id
+    db.session.commit()
+
+    return jsonify({'message': 'Class teacher assigned'}), 200
+
+# 📄 Get class teacher for a class
+@class_teacher_bp.route('/<int:class_id>/teacher', methods=['GET'])
+@token_required
+def get_class_teacher(current_user, class_id):
+    classroom = Classroom.query.get_or_404(class_id)
+
+    if not classroom.class_teacher:
+        return jsonify({'message': 'No class teacher assigned yet'}), 404
+
+    return jsonify({
+        'class_id': classroom.class_id,
+        'class_name': classroom.class_name,
+        'teacher_id': classroom.class_teacher.staff_id,
+        'teacher_name': classroom.class_teacher.user.name
+    }), 200

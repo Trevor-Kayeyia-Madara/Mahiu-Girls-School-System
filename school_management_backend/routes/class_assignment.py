@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
 from app import db
-from models import ClassAssignment, Classroom, Subject, Staff
+from models import ClassAssignment, Classroom, Subject
 from utils.auth_utils import token_required
 
 assignment_bp = Blueprint('class_assignment', __name__)
