@@ -8,3 +8,4 @@ from .subject import Subject
 from .teacher_subject import TeacherSubject
 from .class_assignment import ClassAssignment
 from .grade import Grade
+from .exam import Exam
