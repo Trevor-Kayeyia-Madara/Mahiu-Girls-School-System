@@ -11,3 +11,4 @@ from .grade import Grade
 from .exam import Exam
 from .announcement import Announcement
 from .message import Message
+from .announcement_read import AnnouncementRead

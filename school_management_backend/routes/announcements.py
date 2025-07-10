@@ -1,7 +1,7 @@
 # routes/announcements.py
 
 from flask import Blueprint, request, jsonify
-from models import Announcement, User
+from models import Announcement, User, AnnouncementRead
 from app import db
 from utils.auth_utils import token_required
 
@@ -42,3 +42,31 @@ def get_announcements(current_user):
         'timestamp': a.timestamp.isoformat(),
         'posted_by': a.poster.name
     } for a in announcements])
+    
+    
+@announcement_bp.route('/<int:announcement_id>/read', methods=['POST'])
+@token_required
+def mark_announcement_read(current_user, announcement_id):
+    exists = AnnouncementRead.query.filter_by(
+        announcement_id=announcement_id,
+        user_id=current_user.user_id
+    ).first()
+
+    if not exists:
+        read = AnnouncementRead(
+            announcement_id=announcement_id,
+            user_id=current_user.user_id
+        )
+        db.session.add(read)
+        db.session.commit()
+
+    return jsonify({'message': 'Marked as read'}), 200
+
+@announcement_bp.route('/unread-count', methods=['GET'])
+@token_required
+def announcement_unread_count(current_user):
+    total = Announcement.query.count()
+    read = AnnouncementRead.query.filter_by(user_id=current_user.user_id).count()
+    unread = total - read
+
+    return jsonify({'unread': unread})

@@ -2,7 +2,7 @@
 
 from flask import Blueprint, request, jsonify
 from app import db
-from models import Message, User
+from models import Message, User, Announcement, AnnouncementRead
 from utils.auth_utils import token_required
 
 message_bp = Blueprint('messages', __name__)
@@ -70,14 +70,16 @@ def unread_count(current_user):
     count = Message.query.filter_by(receiver_id=current_user.user_id, read=False).count()
     return jsonify({'unread': count})
 
-# 🔔 General notification summary
 @message_bp.route('/notifications', methods=['GET'])
 @token_required
 def notifications_summary(current_user):
     unread_messages = Message.query.filter_by(receiver_id=current_user.user_id, read=False).count()
     
+    total_announcements = Announcement.query.count()
+    read_announcements = AnnouncementRead.query.filter_by(user_id=current_user.user_id).count()
+    unread_announcements = total_announcements - read_announcements
+
     return jsonify({
         'messages': unread_messages,
-        # 'announcements': 3, # Future enhancement
-        # 'alerts': 0
+        'announcements': unread_announcements
     })
