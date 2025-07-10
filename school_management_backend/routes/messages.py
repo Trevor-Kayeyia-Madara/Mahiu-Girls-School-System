@@ -62,3 +62,22 @@ def mark_as_read(current_user, msg_id):
     msg.read = True
     db.session.commit()
     return jsonify({'message': 'Message marked as read'}), 200
+
+# 🔔 Check unread message count
+@message_bp.route('/unread-count', methods=['GET'])
+@token_required
+def unread_count(current_user):
+    count = Message.query.filter_by(receiver_id=current_user.user_id, read=False).count()
+    return jsonify({'unread': count})
+
+# 🔔 General notification summary
+@message_bp.route('/notifications', methods=['GET'])
+@token_required
+def notifications_summary(current_user):
+    unread_messages = Message.query.filter_by(receiver_id=current_user.user_id, read=False).count()
+    
+    return jsonify({
+        'messages': unread_messages,
+        # 'announcements': 3, # Future enhancement
+        # 'alerts': 0
+    })
