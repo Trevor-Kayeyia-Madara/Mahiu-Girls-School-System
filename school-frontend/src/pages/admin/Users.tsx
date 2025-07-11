@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import axios from 'axios'
+import UserForm from '../../components/UserForm'
 
 interface User {
   user_id: number
@@ -8,44 +9,40 @@ interface User {
   role: string
 }
 
+// ... (rest of your imports and interfaces)
+
 export default function AdminUsers() {
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
+  const [selectedUser, setSelectedUser] = useState<User | null>(null)
+  const [showForm, setShowForm] = useState(false)
 
   const fetchUsers = async () => {
-  const token = localStorage.getItem('token')
-  console.log("Token being sent:", token) 
     try {
-      const res = await axios.get('http://localhost:5001/api/v1/users/', {
-  headers: {
-    Authorization: `Bearer ${token}`,
-  },
-})
-      const userData = res.data?.users
-
-      if (Array.isArray(userData)) {
-        setUsers(userData)
-      } else {
-        console.error('Unexpected user data format:', res.data)
-        setUsers([]) // fallback to empty array
-      }
+      const token = localStorage.getItem('token')
+      console.log("This is the token", token)
+      const res = await axios.get('http://localhost:5001/api/v1/users/',
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      )
+      // Assuming your API returns { success: true, data: [...] }
+      setUsers(res.data.users) // <--- THIS IS THE LIKELY FIX
     } catch (err) {
-      console.error('Failed to fetch users:', err)
-      setUsers([]) // fallback on error
+      console.error('Error loading users:', err)
+      setUsers([]); // Good practice to ensure users is always an array on error
     } finally {
       setLoading(false)
     }
   }
 
-  const handleDelete = async (user_id: number) => {
+  // ... (rest of your component)
+  const handleDelete = async (id: number) => {
     if (!confirm('Are you sure you want to delete this user?')) return
-
-    try {
-      await axios.delete(`/api/v1/users/${user_id}`)
-      fetchUsers() // refresh list after deletion
-    } catch (err) {
-      console.error('Failed to delete user:', err)
-    }
+    await axios.delete(`/api/v1/users/${id}`)
+    fetchUsers()
   }
 
   useEffect(() => {
@@ -53,14 +50,23 @@ export default function AdminUsers() {
   }, [])
 
   return (
-    <div>
-      <h2 className="text-xl font-bold mb-4">👥 Manage Users</h2>
+    <div className="p-6">
+      <h1 className="text-2xl font-bold mb-4">👤 User Management</h1>
+      <button
+        className="mb-4 px-4 py-2 bg-blue-600 text-white rounded"
+        onClick={() => {
+          setSelectedUser(null)
+          setShowForm(true)
+        }}
+      >
+        ➕ Add User
+      </button>
 
       {loading ? (
         <p>Loading...</p>
       ) : (
-        <table className="w-full table-auto border bg-white shadow rounded">
-          <thead className="bg-gray-100 text-left">
+        <table className="w-full bg-white shadow rounded">
+          <thead className="bg-gray-100">
             <tr>
               <th className="p-2">Name</th>
               <th className="p-2">Email</th>
@@ -69,31 +75,40 @@ export default function AdminUsers() {
             </tr>
           </thead>
           <tbody>
-            {users.length > 0 ? (
-              users.map((user) => (
-                <tr key={user.user_id} className="border-t">
-                  <td className="p-2">{user.name}</td>
-                  <td className="p-2">{user.email}</td>
-                  <td className="p-2 capitalize">{user.role}</td>
-                  <td className="p-2 space-x-2">
-                    <button
-                      onClick={() => handleDelete(user.user_id)}
-                      className="text-red-500 hover:underline"
-                    >
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan={4} className="p-4 text-center text-gray-500">
-                  No users found.
+            {users.map((u) => (
+              <tr key={u.user_id} className="border-t">
+                <td className="p-2">{u.name}</td>
+                <td className="p-2">{u.email}</td>
+                <td className="p-2">{u.role}</td>
+                <td className="p-2 space-x-2">
+                  <button
+                    onClick={() => {
+                      setSelectedUser(u)
+                      setShowForm(true)
+                    }}
+                    className="text-blue-600 hover:underline"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => handleDelete(u.user_id)}
+                    className="text-red-600 hover:underline"
+                  >
+                    Delete
+                  </button>
                 </td>
               </tr>
-            )}
+            ))}
           </tbody>
         </table>
+      )}
+
+      {showForm && (
+        <UserForm
+          user={selectedUser}
+          onClose={() => setShowForm(false)}
+          onSaved={fetchUsers}
+        />
       )}
     </div>
   )
