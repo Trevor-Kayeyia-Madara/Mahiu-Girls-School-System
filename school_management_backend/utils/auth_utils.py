@@ -3,8 +3,12 @@ import jwt
 from functools import wraps
 from flask import request, jsonify
 from models import User, Teacher, Parent
+from dotenv import load_dotenv
 
+load_dotenv()
 SECRET_KEY = os.getenv("SECRET_KEY")  # use env variable in production
+print(f"SECRET_KEY loaded: {SECRET_KEY}")
+
 
 def token_required(f):
     @wraps(f)
