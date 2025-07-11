@@ -2,11 +2,11 @@ from flask import Blueprint, request, jsonify
 from models import User
 from app import db
 from utils.auth_utils import generate_token
-from flask_bcrypt import Bcrypt
+
 
 auth_bp = Blueprint('auth', __name__)
-bcrypt = Bcrypt()
 
+# LOGIN
 @auth_bp.route('/login', methods=['POST'])
 def login():
     data = request.get_json()
@@ -14,14 +14,14 @@ def login():
     password = data.get('password')
 
     user = User.query.filter_by(email=email).first()
-    if not user or not bcrypt.check_password_hash(user.password, password):
+    if not user or user.password != password:
         return jsonify({'error': 'Invalid credentials'}), 401
 
     token = generate_token(user)
     return jsonify({'token': token, 'role': user.role, 'user_id': user.user_id}), 200
 
-# REGISTER
 
+# REGISTER
 @auth_bp.route('/register', methods=['POST'])
 def register():
     data = request.get_json()
@@ -29,8 +29,8 @@ def register():
     user = User(
         name=data['name'],
         email=data['email'],
-        password=data['password'],
-        role=data['role']  # validate 'admin', 'teacher', 'parent'
+        password=data['password'],  # ✅ Plaintext password
+        role=data['role']
     )
     db.session.add(user)
     db.session.commit()
