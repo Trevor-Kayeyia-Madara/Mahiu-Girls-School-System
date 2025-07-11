@@ -15,15 +15,14 @@ def get_users(current_user):
         return jsonify({"error": "Unauthorized"}), 403
 
     users = User.query.all()
-    return jsonify([
-        {
-            "user_id": u.user_id,
-            "name": u.name,
-            "email": u.email,
-            "role": u.role,
-        }
-        for u in users
-    ])
+    user_list = [{
+        'user_id': u.user_id,
+        'name': u.name,
+        'email': u.email,
+        'role': u.role
+    } for u in users]
+    return jsonify({'users': user_list})
+    
 
 # ❌ DELETE user by ID
 @user_bp.route("/<int:user_id>", methods=["DELETE"])

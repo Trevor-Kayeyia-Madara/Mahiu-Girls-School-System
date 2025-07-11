@@ -18,10 +18,12 @@ export default function LoginPage() {
         email,
         password,
       })
-
+      const token = res.data.token
+      localStorage.setItem("token", token)
+      
     const user = {
             user_id: res.data.user_id,
-            name: '', // You can fetch or set this later
+            name: res.data.name, // You can fetch or set this later
             email,
             role: res.data.role,
             token: res.data.token,

@@ -13,11 +13,25 @@ export default function AdminUsers() {
   const [loading, setLoading] = useState(true)
 
   const fetchUsers = async () => {
+  const token = localStorage.getItem('token')
+  console.log("Token being sent:", token) 
     try {
-      const res = await axios.get('/api/v1/users')
-      setUsers(res.data)
+      const res = await axios.get('http://localhost:5001/api/v1/users/', {
+  headers: {
+    Authorization: `Bearer ${token}`,
+  },
+})
+      const userData = res.data?.users
+
+      if (Array.isArray(userData)) {
+        setUsers(userData)
+      } else {
+        console.error('Unexpected user data format:', res.data)
+        setUsers([]) // fallback to empty array
+      }
     } catch (err) {
       console.error('Failed to fetch users:', err)
+      setUsers([]) // fallback on error
     } finally {
       setLoading(false)
     }
@@ -25,11 +39,12 @@ export default function AdminUsers() {
 
   const handleDelete = async (user_id: number) => {
     if (!confirm('Are you sure you want to delete this user?')) return
+
     try {
       await axios.delete(`/api/v1/users/${user_id}`)
-      fetchUsers()
+      fetchUsers() // refresh list after deletion
     } catch (err) {
-      console.error('Failed to delete:', err)
+      console.error('Failed to delete user:', err)
     }
   }
 
@@ -54,23 +69,23 @@ export default function AdminUsers() {
             </tr>
           </thead>
           <tbody>
-            {users.map((user) => (
-              <tr key={user.user_id} className="border-t">
-                <td className="p-2">{user.name}</td>
-                <td className="p-2">{user.email}</td>
-                <td className="p-2 capitalize">{user.role}</td>
-                <td className="p-2 space-x-2">
-                  {/* Later: Add edit modal */}
-                  <button
-                    onClick={() => handleDelete(user.user_id)}
-                    className="text-red-500 hover:underline"
-                  >
-                    Delete
-                  </button>
-                </td>
-              </tr>
-            ))}
-            {users.length === 0 && (
+            {users.length > 0 ? (
+              users.map((user) => (
+                <tr key={user.user_id} className="border-t">
+                  <td className="p-2">{user.name}</td>
+                  <td className="p-2">{user.email}</td>
+                  <td className="p-2 capitalize">{user.role}</td>
+                  <td className="p-2 space-x-2">
+                    <button
+                      onClick={() => handleDelete(user.user_id)}
+                      className="text-red-500 hover:underline"
+                    >
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              ))
+            ) : (
               <tr>
                 <td colSpan={4} className="p-4 text-center text-gray-500">
                   No users found.
