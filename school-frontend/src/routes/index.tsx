@@ -4,6 +4,7 @@ import AdminLayout from '../layouts/AdminLayout'
 import AdminDashboard from '../pages/admin/Dashboard'
 import ProtectedRoute from './ProtectedRoute'
 import AdminUsers from '../pages/admin/Users'
+import AdminTeachers from '../pages/admin/Teachers'
 
 const router = createBrowserRouter([
   {
@@ -19,6 +20,7 @@ const router = createBrowserRouter([
         children: [
           { index: true, element: <AdminDashboard /> },
           { path: 'users', element: <AdminUsers /> },
+          {path:'teachers', element: <AdminTeachers />}
           // Placeholder: Add more admin children routes here later
         ]
       }
