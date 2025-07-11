@@ -1,18 +1,20 @@
-import { createBrowserRouter } from "react-router-dom"
-// import LoginPage from "../pages/Login"
-// import AdminDashboard from "../pages/admin/Dashboard"
-// ... import other role-based layouts later
+import { createBrowserRouter, Navigate } from "react-router-dom"
+import LoginPage from "../pages/Login"
+import NotFound from "../pages/NotFound"
 
 const router = createBrowserRouter([
-//   {
-//     path: "/login",
-//     element: <LoginPage />,
-//   },
-//   {
-//     path: "/admin",
-//     element: <AdminDashboard />,
-//   },
-  // Future: teacher, parent, etc.
+  {
+    path: "/",
+    element: <Navigate to="/login" replace />,
+  },
+  {
+    path: "/login",
+    element: <LoginPage />,
+  },
+  {
+    path: "*", // Catch-all 404 route
+    element: <NotFound />,
+  },
 ])
 
 export default router
