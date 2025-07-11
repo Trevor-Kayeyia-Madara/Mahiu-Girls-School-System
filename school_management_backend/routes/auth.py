@@ -28,7 +28,7 @@ def register():
     user = User(
         name=data['name'],
         email=data['email'],
-        password=hashed,
+        password=data['password'],
         role=data['role']  # validate 'admin', 'teacher', 'parent'
     )
     db.session.add(user)
