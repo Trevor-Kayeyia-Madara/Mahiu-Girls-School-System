@@ -20,10 +20,11 @@ def login():
     token = generate_token(user)
     return jsonify({'token': token, 'role': user.role, 'user_id': user.user_id}), 200
 
+# REGISTER
+
 @auth_bp.route('/register', methods=['POST'])
 def register():
     data = request.get_json()
-    hashed = bcrypt.generate_password_hash(data['password']).decode('utf-8')
 
     user = User(
         name=data['name'],
