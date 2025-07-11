@@ -16,5 +16,6 @@ class Teacher(db.Model):
     # ✅ Explicit two-way relationship
     classrooms = db.relationship('Classroom', back_populates='class_teacher')
 
-    subject_assignments = db.relationship('ClassAssignment', back_populates='assigned_teacher')
+    subject_assignments = db.relationship('ClassAssignment', back_populates='assigned_teacher', overlaps="teacher")
+
 

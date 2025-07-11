@@ -9,7 +9,8 @@ class ClassAssignment(db.Model):
 
     classroom = db.relationship('Classroom', backref='subject_assignments')
     subject = db.relationship('Subject')
-    teacher = db.relationship('Teacher')
+    teacher = db.relationship('Teacher', back_populates='subject_assignments', overlaps="assigned_teacher")
+
 
     assigned_teacher = db.relationship('Teacher', back_populates='subject_assignments')
     __table_args__ = (
