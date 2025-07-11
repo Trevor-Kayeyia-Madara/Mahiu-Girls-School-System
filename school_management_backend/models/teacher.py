@@ -1,7 +1,5 @@
 from app import db
 
-# models/teacher.py (or integrated into models/staff.py)
-
 class Teacher(db.Model):
     __tablename__ = 'teachers'
 
@@ -13,7 +11,10 @@ class Teacher(db.Model):
     contact = db.Column(db.String(100))
     qualifications = db.Column(db.String(200))
 
-    # Relationships
-    user = db.relationship('User', backref='teacher', uselist=False)
-    classrooms = db.relationship('Classroom', backref='class_teacher')
-    subject_assignments = db.relationship('ClassAssignment', backref='teacher')
+    user = db.relationship('User', back_populates='teacher', uselist=False)
+
+    # ✅ Explicit two-way relationship
+    classrooms = db.relationship('Classroom', back_populates='class_teacher')
+
+    subject_assignments = db.relationship('ClassAssignment', back_populates='assigned_teacher')
+

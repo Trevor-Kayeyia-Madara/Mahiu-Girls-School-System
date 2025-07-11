@@ -9,8 +9,9 @@ class ClassAssignment(db.Model):
 
     classroom = db.relationship('Classroom', backref='subject_assignments')
     subject = db.relationship('Subject')
-    teacher = db.relationship('Teachers')
+    teacher = db.relationship('Teacher')
 
+    assigned_teacher = db.relationship('Teacher', back_populates='subject_assignments')
     __table_args__ = (
         db.UniqueConstraint('class_id', 'subject_id', name='uq_class_subject'),
     )

@@ -8,3 +8,4 @@ class Parent(db.Model):
     occupation = db.Column(db.String(100))
 
     students = db.relationship('Student', backref='parent')
+    user = db.relationship('User', back_populates='parent', uselist=False)
