@@ -19,9 +19,15 @@ export default function LoginPage() {
         password,
       })
 
-      const user = res.data.user
-      user.token = res.data.token
-      login(user)
+    const user = {
+            user_id: res.data.user_id,
+            name: '', // You can fetch or set this later
+            email,
+            role: res.data.role,
+            token: res.data.token,
+    }
+    login(user)
+
 
       if (user.role === 'admin') navigate('/admin')
       else if (user.role === 'teacher') navigate('/teacher')
