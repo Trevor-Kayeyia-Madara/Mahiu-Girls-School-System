@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify
 from models import db, Teacher, User
+from werkzeug.security import generate_password_hash
 from utils.auth_utils import token_required
 from utils.helpers import generate_employee_number, generate_random_password
 
@@ -29,41 +30,50 @@ def list_teachers(current_user):
 @teacher_bp.route('/', methods=['POST'])
 @token_required
 def create_teacher(current_user):
-    data = request.get_json()
+    if current_user.role != 'admin':
+        return jsonify({'error': 'Unauthorized'}), 403
 
-    # ✅ Ensure required fields
-    required_fields = ['name', 'email', 'gender', 'contact', 'qualifications']
-    if not all(field in data and data[field] for field in required_fields):
-        return jsonify({'error': 'All fields are required'}), 400
+    data = request.json
+    name = data.get('name')
+    email = data.get('email')
+    password = data.get('password')  # Required
+    gender = data.get('gender', '')
+    contact = data.get('contact', '')
+    qualifications = data.get('qualifications', '')
 
-    # ✅ Prevent duplicate email
-    existing_user = User.query.filter_by(email=data['email']).first()
+    if not all([name, email, password]):
+        return jsonify({'error': 'Name, email, and password are required'}), 400
+
+    existing_user = User.query.filter_by(email=email).first()
     if existing_user:
-        return jsonify({'error': 'A user with this email already exists'}), 409
+        return jsonify({'error': 'User with this email already exists'}), 400
 
-    # ✅ Create new user
+    # Create the user
     new_user = User(
-        name=data['name'],
-        email=data['email'],
-        password=generate_random_password(),
+        name=name,
+        email=email,
+        password=generate_password_hash(password),
         role='teacher'
     )
     db.session.add(new_user)
-    db.session.flush()  # Assigns user_id
+    db.session.flush()  # Allows access to new_user.user_id before commit
 
-    # ✅ Create teacher record
+    # Create the teacher record
     new_teacher = Teacher(
         user_id=new_user.user_id,
-        gender=data['gender'],
-        contact=data['contact'],
-        qualifications=data['qualifications'],
-        employee_number=generate_employee_number()
+        employee_number=generate_employee_number(),
+        gender=gender,
+        contact=contact,
+        qualifications=qualifications
     )
     db.session.add(new_teacher)
     db.session.commit()
 
-    return jsonify({'message': 'Teacher created successfully'}), 201
-
+    return jsonify({
+        'message': 'Teacher created successfully',
+        'teacher_id': new_teacher.teacher_id,
+        'employee_number': new_teacher.employee_number
+    }), 201
 
 #GET one Teacher
 @teacher_bp.route('/<int:teacher_id>', methods=['GET'])
