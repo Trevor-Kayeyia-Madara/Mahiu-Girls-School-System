@@ -20,7 +20,8 @@ export default function AdminTeachers() {
 
   const fetchTeachers = async () => {
     try {
-      const res = await axios.get('http://localhost:5001/api/v1/teachers')
+      const token = localStorage.getItem("token")
+      const res = await axios.get('http://localhost:5001/api/v1/teachers',{headers: {Authorization: `Bearer ${token}`}})
       setTeachers(res.data)
     } catch (err) {
       console.error('Error fetching teachers:', err)
