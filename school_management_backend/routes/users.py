@@ -8,7 +8,7 @@ from utils.auth_utils import token_required
 user_bp = Blueprint("users", __name__)
 
 # 📄 GET all users
-@user_bp.route("/", methods=["GET"])
+@user_bp.route("/", methods=["GET","OPTIONS"])
 @token_required
 def get_users(current_user):
     if current_user.role != "admin":
@@ -25,7 +25,7 @@ def get_users(current_user):
     
 
 # ❌ DELETE user by ID
-@user_bp.route("/<int:user_id>", methods=["DELETE"])
+@user_bp.route("/<int:user_id>", methods=["DELETE","OPTIONS"])
 @token_required
 def delete_user(current_user, user_id):
     if current_user.role != "admin":
@@ -37,7 +37,7 @@ def delete_user(current_user, user_id):
     return jsonify({"message": "User deleted successfully"}), 200
 
 
-@user_bp.route("/", methods=["POST"])
+@user_bp.route("/", methods=["POST","OPTIONS"])
 @token_required
 def create_user(current_user):
     if current_user.role != "admin":
@@ -62,7 +62,7 @@ def create_user(current_user):
 
     return jsonify({"message": "User created"}), 201
 
-@user_bp.route("/<int:user_id>", methods=["PUT"])
+@user_bp.route("/<int:user_id>", methods=["PUT","OPTIONS"])
 @token_required
 def update_user(current_user, user_id):
     if current_user.role != "admin":

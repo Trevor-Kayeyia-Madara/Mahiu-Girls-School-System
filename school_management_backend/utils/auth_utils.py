@@ -6,15 +6,16 @@ from models import User, Teacher, Parent
 from dotenv import load_dotenv
 
 load_dotenv()
-SECRET_KEY = os.getenv("SECRET_KEY")  # use env variable in production
-print(f"SECRET_KEY loaded: {SECRET_KEY}")
+SECRET_KEY = os.getenv("SECRET_KEY")
 
 
 def token_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
-        token = None
+        if request.method == 'OPTIONS':
+            return '', 200  # Handle CORS preflight gracefully
 
+        token = None
         if 'Authorization' in request.headers:
             token = request.headers['Authorization'].split(" ")[1]
 
@@ -28,7 +29,7 @@ def token_required(f):
             if not user:
                 return jsonify({'error': 'User not found'}), 401
 
-            # Attach role-specific object (teacher/parent)
+            # Attach role-specific object
             if user.role == 'teacher':
                 user.teacher = Teacher.query.filter_by(user_id=user.user_id).first()
             elif user.role == 'parent':
@@ -41,6 +42,7 @@ def token_required(f):
 
         return f(user, *args, **kwargs)
     return decorated
+
 
 def generate_token(user):
     token = jwt.encode({'user_id': user.user_id}, SECRET_KEY, algorithm="HS256")

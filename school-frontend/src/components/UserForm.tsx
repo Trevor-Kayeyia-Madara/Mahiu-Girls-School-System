@@ -23,14 +23,18 @@ export default function UserForm({ user, onClose, onSaved }: Props) {
   }, [user])
 
   const handleSubmit = async (e: React.FormEvent) => {
+    const token = localStorage.getItem('token')  // or wherever you store the JWT
+        const headers = {
+          Authorization: `Bearer ${token}`
+        }
     e.preventDefault()
 
     const payload = { name, email, role, ...(user ? {} : { password }) }
 
     if (user) {
-      await axios.put(`http://localhost:5001/api/v1/users/${user.user_id}`, payload)
+      await axios.put(`http://localhost:5001/api/v1/users/${user.user_id}`, payload,{headers})
     } else {
-      await axios.post(`http://localhost:5001/api/v1/users`, payload)
+      await axios.post(`http://localhost:5001/api/v1/users`, payload,{headers})
     }
 
     onSaved()

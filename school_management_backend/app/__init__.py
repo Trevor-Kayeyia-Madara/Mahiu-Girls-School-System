@@ -12,11 +12,14 @@ def create_app():
     load_dotenv()
 
     app = Flask(__name__)
+    app.url_map.strict_slashes = False 
     app.config.from_object('config.Config')
     
-    import models
+    import models  # Ensure models are loaded before db.init_app
 
-    CORS(app, resources={r"/api/*": {"origins": "*"}})
+    # ✅ Allow only frontend origin and support credentials (e.g., headers)
+    CORS(app, resources={r"/api/*": {"origins": "http://localhost:5173"}}, supports_credentials=True)
+
     db.init_app(app)
     migrate.init_app(app, db)
 
