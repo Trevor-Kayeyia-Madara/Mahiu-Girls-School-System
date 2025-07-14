@@ -97,6 +97,8 @@ def get_teacher(current_user, teacher_id):
         'date_of_birth': teacher.date_of_birth,
         'qualifications': teacher.qualifications
     }), 200
+    
+    #Update Teacher
 
 @teacher_bp.route('/<int:teacher_id>', methods=['PUT'])
 @token_required
@@ -117,6 +119,7 @@ def update_teacher(current_user, teacher_id):
     teacher.employee_number = data.get('employee_number', teacher.employee_number)
     teacher.gender = data.get('gender', teacher.gender)
     teacher.contact = data.get('contact', teacher.contact)
+    teacher.date_of_birth = data.get('date_of_birth', teacher.date_of_birth)
     teacher.qualifications = data.get('qualifications', teacher.qualifications)
 
     db.session.commit()
