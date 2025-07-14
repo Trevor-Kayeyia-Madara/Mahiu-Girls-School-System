@@ -106,6 +106,7 @@ export default function AdminStudents() {
           <table className="w-full bg-white shadow table-auto rounded">
             <thead className="bg-gray-100">
               <tr>
+                <th className="px-4 py-2">Serial Number</th>
                 <th className="text-left p-2">Admission #</th>
                 <th className="text-left p-2">Name</th>
                 <th className="text-left p-2">Gender</th>
@@ -119,6 +120,7 @@ export default function AdminStudents() {
               {students.length > 0 ? (
                 students.map((s) => (
                   <tr key={s.student_id} className="border-t">
+                    <td className="px-4 py-2">{s.student_id}</td>
                     <td className="p-2">{s.admission_number}</td>
                     <td className="p-2">{s.first_name} {s.last_name}</td>
                     <td className="p-2">{s.gender}</td>
