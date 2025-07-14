@@ -1,7 +1,9 @@
+import datetime
 from flask import Blueprint, request, jsonify
 from app import db
 from models import TimetableEntry, Classroom, Subject, Teacher
 from utils.auth_utils import token_required
+import datetime
 
 timetable_bp = Blueprint('timetable', __name__)
 
@@ -46,18 +48,25 @@ def add_timetable_entry(current_user):
         return jsonify({'error': 'Only admin can add entries'}), 403
 
     data = request.get_json()
+
+    try:
+        start_time_obj = datetime.datetime.strptime(data['start_time'], '%H:%M').time()
+        end_time_obj = datetime.datetime.strptime(data['end_time'], '%H:%M').time()
+    except (ValueError, TypeError):
+        return jsonify({'error': 'Invalid time format'}), 400
+
     entry = TimetableEntry(
         class_id=data['class_id'],
         subject_id=data['subject_id'],
         teacher_id=data['teacher_id'],
         day=data['day'],
-        start_time=data['start_time'],
-        end_time=data['end_time']
+        start_time=start_time_obj,
+        end_time=end_time_obj
     )
+
     db.session.add(entry)
     db.session.commit()
     return jsonify({'message': 'Entry added'}), 201
-
 # 🗑 DELETE an entry
 @timetable_bp.route('/<int:entry_id>', methods=['DELETE'])
 @token_required
