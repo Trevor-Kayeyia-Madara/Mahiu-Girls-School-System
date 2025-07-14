@@ -152,6 +152,17 @@ export default function TeacherForm({ teacher, onClose, onSaved }: TeacherFormPr
           />
         </div>
 
+          {/* Date Of Birth */}
+        <div className="mb-4">
+          <label className="block mb-1 font-medium">Date Of Birth</label>
+          <input
+            type="text"
+            value={formData.date_of_birth}
+            onChange={(e) => setFormData({ ...formData, date_of_birth: e.target.value })}
+            className="w-full border px-3 py-2 rounded"
+          />
+        </div>
+
         {/* Qualifications */}
         <div className="mb-4">
           <label className="block mb-1 font-medium">Qualifications</label>
