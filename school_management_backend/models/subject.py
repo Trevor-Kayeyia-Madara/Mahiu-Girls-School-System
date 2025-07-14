@@ -9,3 +9,4 @@ class Subject(db.Model):
     compulsory = db.Column(db.Boolean, default=False)
 
     teacher_subjects = db.relationship('TeacherSubject', backref='subject')
+    grades = db.relationship('Grade', backref='subject')
