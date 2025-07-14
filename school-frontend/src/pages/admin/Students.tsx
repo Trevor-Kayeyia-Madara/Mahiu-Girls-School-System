@@ -110,7 +110,7 @@ export default function AdminStudents() {
                 <th className="text-left p-2">Name</th>
                 <th className="text-left p-2">Gender</th>
                 <th className="text-left p-2">Guardian</th>
-                <th className="text-left p-2">Contact</th>
+                <th className="text-left p-2">Class</th>
                 <th className="text-left p-2">Actions</th>
               </tr>
             </thead>

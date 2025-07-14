@@ -85,7 +85,7 @@ def update_student(current_user, student_id):
     student.last_name = data.get('last_name', student.last_name)
     student.admission_number = data.get('admission_number', student.admission_number)
     student.gender = data.get('gender', student.gender)
-    student.date_of_birth = datetime.strptime(data['date_of_birth'], '%Y-%m-%d') if data.get('date_of_birth') else student.date_of_birth
+    student.date_of_birth = data.get('date_of_birth', student.date_of_birth)
     student.class_id = data.get('class_id', student.class_id)
     student.parent_id = data.get('parent_id', student.parent_id)
 

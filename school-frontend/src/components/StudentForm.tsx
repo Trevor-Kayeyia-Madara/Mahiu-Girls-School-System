@@ -13,6 +13,11 @@ interface Classroom {
   class_name: string
 }
 
+interface Parent{
+  parent_id: number
+  name: string
+}
+
 export default function StudentForm({ student, onClose, onSaved }: Props) {
   const [form, setForm] = useState({
     admission_number: '',
@@ -25,6 +30,7 @@ export default function StudentForm({ student, onClose, onSaved }: Props) {
   })
 
   const [classes, setClasses] = useState<Classroom[]>([])
+  const [parents, setParents] = useState<Parent[]>([])
   const token = localStorage.getItem('token')
 
   const fetchClasses = useCallback(async () => {
@@ -34,16 +40,25 @@ export default function StudentForm({ student, onClose, onSaved }: Props) {
     setClasses(res.data)
   }, [token])
 
+  const fetchParents = useCallback(async () => {
+    const res = await axios.get('http://localhost:5001/api/v1/parents', {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    setParents(res.data)
+  }, [token])
+
   useEffect(() => {
     if (student) {
       setForm({
         ...student,
         class_id: String(student.class_id || ''),
-        date_of_birth: student.date_of_birth?.slice(0, 10) || '', // format if ISO
+        parent_id: String(student.parent_id || ''),
+        date_of_birth: String(student.date_of_birth|| '',)
       })
     }
     fetchClasses()
-  }, [student, fetchClasses])
+    fetchParents()
+  }, [student, fetchClasses, fetchParents])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target
@@ -126,7 +141,6 @@ export default function StudentForm({ student, onClose, onSaved }: Props) {
             className="border p-2 rounded"
           >
             <option value="">Select Gender</option>
-            <option value="Male">Male</option>
             <option value="Female">Female</option>
           </select>
 
@@ -138,20 +152,19 @@ export default function StudentForm({ student, onClose, onSaved }: Props) {
             onChange={handleChange}
             className="border p-2 rounded"
           />
-          <input
-            name="guardian_name"
-            placeholder="Guardian Name"
+          <select
+            name="parent_id"
             value={form.parent_id}
             onChange={handleChange}
             className="border p-2 rounded"
-          />
-          <input
-            name="class"
-            placeholder="Class"
-            value={form.class_id}
-            onChange={handleChange}
-            className="border p-2 rounded col-span-2"
-          />
+          >
+           <option value="">Select Guardian</option>
+            {parents.map((p) => (
+              <option key={p.parent_id} value={p.parent_id}>
+                {p.name}
+             </option>
+           ))}
+          </select>
         </div>
 
         <div className="mt-6 flex justify-end space-x-3">
