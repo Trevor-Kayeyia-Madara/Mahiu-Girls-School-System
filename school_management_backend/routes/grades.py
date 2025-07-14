@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
 from app import db
-from models import Grade
+from models import Grade, Student, Subject, Teacher
 from utils.auth_utils import token_required
 
 grade_bp = Blueprint('grades', __name__)
@@ -45,6 +45,31 @@ def get_grades(current_user):
 
     return jsonify(result), 200
 
+@grade_bp.route('/grades', methods=['GET'])
+@token_required
+def get_grades_paginated(current_user):
+    if current_user.role not in ['admin', 'teacher']:
+        return jsonify({'error': 'Unauthorized'}), 403
+
+    page = int(request.args.get('page', 1))
+    per_page = int(request.args.get('per_page', 10))
+
+    query = Grade.query.join(Student).join(Subject).join(Teacher)
+
+    total = query.count()
+    grades = query.offset((page - 1) * per_page).limit(per_page).all()
+
+    return jsonify({
+        'total': total,
+        'data': [{
+            'student_name': g.student.first_name + ' ' + g.student.last_name,
+            'subject': g.subject.name,
+            'score': g.score,
+            'term': g.term,
+            'year': g.year,
+            'teacher': g.teacher.user.name
+        } for g in grades]
+    }), 200
 
 @grade_bp.route('/', methods=['POST'])
 @token_required
@@ -139,12 +164,10 @@ def update_grade(current_user, grade_id):
     grade = Grade.query.get_or_404(grade_id)
     data = request.get_json()
 
-    # Optional updates
     grade.score = data.get('score', grade.score)
     grade.term = data.get('term', grade.term)
     grade.year = data.get('year', grade.year)
 
-    # Optional: allow changing student/subject only for admin
     if current_user.role == 'admin':
         grade.student_id = data.get('student_id', grade.student_id)
         grade.subject_id = data.get('subject_id', grade.subject_id)
@@ -153,6 +176,7 @@ def update_grade(current_user, grade_id):
 
     db.session.commit()
     return jsonify({'message': 'Grade updated'}), 200
+
 @grade_bp.route('/bulk', methods=['POST'])
 @token_required
 def bulk_upload_grades(current_user):
@@ -173,9 +197,8 @@ def bulk_upload_grades(current_user):
         score = item.get('score')
 
         if not all([student_id, subject_id, class_id, teacher_id, term, year, score]):
-            continue  # skip incomplete records
+            continue
 
-        # Check if grade exists (upsert logic)
         grade = Grade.query.filter_by(
             student_id=student_id,
             subject_id=subject_id,
