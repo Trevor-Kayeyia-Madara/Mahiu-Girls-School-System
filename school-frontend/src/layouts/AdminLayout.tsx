@@ -24,6 +24,7 @@ export default function AdminLayout() {
           <Link to="/admin/classrooms" className="block hover:text-yellow-400">🏫 Classrooms</Link>
           <Link to="/admin/subjects" className="block hover:text-yellow-400">📘 Subjects</Link>
           <Link to="/admin/grades" className="block hover:text-yellow-400">📝 Grades</Link>
+          <Link to ="/admin/timetable" className="block hover:text-yellow-400">📅 Timetable</Link>
           <Link to="/admin/reports" className="block hover:text-yellow-400">📄 Reports</Link>
           <button onClick={handleLogout} className="mt-4 text-red-400 hover:text-red-600">🚪 Logout</button>
         </nav>
