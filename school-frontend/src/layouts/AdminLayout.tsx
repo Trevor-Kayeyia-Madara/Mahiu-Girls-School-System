@@ -20,6 +20,7 @@ export default function AdminLayout() {
           <Link to="/admin/users" className="block hover:text-yellow-400">👤 Users</Link>
           <Link to="/admin/students" className="block hover:text-yellow-400">🎓 Students</Link>
           <Link to="/admin/teachers" className="block hover:text-yellow-400">🧑‍🏫 Teachers</Link>
+          <Link to="/admin/assignments" className="block hover:text-yellow-400">📚 Classes</Link>
           <Link to="/admin/classrooms" className="block hover:text-yellow-400">🏫 Classrooms</Link>
           <Link to="/admin/subjects" className="block hover:text-yellow-400">📘 Subjects</Link>
           <Link to="/admin/grades" className="block hover:text-yellow-400">📝 Grades</Link>
