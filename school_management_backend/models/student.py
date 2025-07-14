@@ -8,7 +8,7 @@ class Student(db.Model):
     first_name = db.Column(db.String(100), nullable=False)
     last_name = db.Column(db.String(100), nullable=False)
     gender = db.Column(db.String(10), nullable=False)
-    date_of_birth = db.Column(db.Date)
+    date_of_birth = db.Column(db.String(255), nullable=False)
     parent_id = db.Column(db.Integer, db.ForeignKey('parents.parent_id'))
     class_id = db.Column(db.Integer, db.ForeignKey('classrooms.class_id'))
 

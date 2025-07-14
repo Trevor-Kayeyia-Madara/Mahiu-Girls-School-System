@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext'
 export default function ProtectedRoute({ allowedRoles }: { allowedRoles: string[] }) {
   const { user } = useAuth()
 
-  if (!user) return <Navigate to="/login" />
+  if (!user) return <Navigate to="/" />
   // Assuming user.role is defined and correctly reflects the user's role
   if (!allowedRoles.includes(user.role)) return <Navigate to="/unauthorized" />
 

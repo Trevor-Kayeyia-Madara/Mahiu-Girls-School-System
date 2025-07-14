@@ -21,7 +21,7 @@ def get_all_students(current_user):
         'last_name': s.last_name,
         'admission_number': s.admission_number,
         'gender': s.gender,
-        'date_of_birth': s.date_of_birth.isoformat() if s.date_of_birth else None,
+        'date_of_birth': s.date_of_birth,
         'class_id': s.class_id,
         'class_name': s.classroom.class_name if s.classroom else None,
         'parent_id': s.parent_id,
@@ -40,7 +40,7 @@ def get_student(current_user, student_id):
         'last_name': student.last_name,
         'admission_number': student.admission_number,
         'gender': student.gender,
-        'date_of_birth': student.date_of_birth.isoformat() if student.date_of_birth else None,
+        'date_of_birth': student.date_of_birth,
         'class_id': student.class_id,
         'parent_id': student.parent_id,
         'parent_name': student.parent.user.name if student.parent else None
@@ -60,7 +60,7 @@ def create_student(current_user):
             last_name=data['last_name'],
             admission_number=data['admission_number'],
             gender=data['gender'],
-            date_of_birth=datetime.strptime(data['date_of_birth'], '%Y-%m-%d'),
+            date_of_birth=data['date_of_birth'],
             class_id=data['class_id'],
             parent_id=data.get('parent_id')
         )
