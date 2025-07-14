@@ -5,6 +5,47 @@ from utils.auth_utils import token_required
 
 grade_bp = Blueprint('grades', __name__)
 
+@grade_bp.route('/', methods=['GET'])
+@token_required
+def get_grades(current_user):
+    if current_user.role not in ['admin', 'teacher']:
+        return jsonify({'error': 'Unauthorized'}), 403
+
+    class_id = request.args.get('class_id')
+    subject_id = request.args.get('subject_id')
+    term = request.args.get('term')
+    year = request.args.get('year')
+
+    query = Grade.query
+
+    if class_id:
+        query = query.filter_by(class_id=class_id)
+    if subject_id:
+        query = query.filter_by(subject_id=subject_id)
+    if term:
+        query = query.filter_by(term=term)
+    if year:
+        query = query.filter_by(year=year)
+
+    grades = query.all()
+
+    result = []
+    for g in grades:
+        result.append({
+            'grade_id': g.grade_id,
+            'student_name': g.student.name,
+            'admission_number': g.student.admission_number,
+            'subject': g.subject.name,
+            'score': g.score,
+            'exam_name': getattr(g, 'exam', {}).get('name', 'N/A') if hasattr(g, 'exam') else 'N/A',
+            'term': g.term,
+            'year': g.year,
+            'teacher_name': g.teacher.name
+        })
+
+    return jsonify(result), 200
+
+
 @grade_bp.route('/', methods=['POST'])
 @token_required
 def add_or_update_grade(current_user):
