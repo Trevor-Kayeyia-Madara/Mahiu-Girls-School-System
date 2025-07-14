@@ -113,6 +113,7 @@ export default function AdminTeachers() {
           <table className="w-full bg-white shadow table-auto rounded">
             <thead className="bg-gray-100">
               <tr>
+                <th className="px-4 py-2 text-left">Serial Number</th>
                 <th className="text-left p-2">Name</th>
                 <th className="text-left p-2">Email</th>
                 <th className="text-left p-2">Emp. #</th>
@@ -126,6 +127,7 @@ export default function AdminTeachers() {
             <tbody>
               {teachers.map((t) => (
                 <tr key={t.teacher_id} className="border-t">
+                  <td className="px-4 py-2">{t.teacher_id}</td>
                   <td className="p-2">{t.name}</td>
                   <td className="p-2">{t.email}</td>
                   <td className="p-2">{t.employee_number}</td>
