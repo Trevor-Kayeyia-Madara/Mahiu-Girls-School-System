@@ -8,6 +8,6 @@ env/
 venv/
 seed.py/
 *.env
-instance/school.db/
+school_management_backend/instance/school.db/
 .idea/  # PyCharm files
 .vscode/ # VS Code files
