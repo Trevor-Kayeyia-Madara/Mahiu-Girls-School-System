@@ -7,6 +7,7 @@ interface Teacher {
   email: string
   gender?: string
   contact?: string
+  date_of_birth?:string
   qualifications?: string
 }
 
@@ -23,6 +24,7 @@ export default function TeacherForm({ teacher, onClose, onSaved }: TeacherFormPr
     password: '',
     gender: teacher?.gender || '',
     contact: teacher?.contact || '',
+    date_of_birth: teacher?.date_of_birth || '',
     qualifications: teacher?.qualifications || '',
   })
 

@@ -9,7 +9,7 @@ class Teacher(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.user_id'), unique=True, nullable=False)
     employee_number = db.Column(db.String(50), unique=True, nullable=False)
     gender = db.Column(db.String(10))
-    date_of_birth = db.Column(db.Date)
+    date_of_birth = db.Column(db.String(255))
     contact = db.Column(db.String(100))
     qualifications = db.Column(db.String(200))
 

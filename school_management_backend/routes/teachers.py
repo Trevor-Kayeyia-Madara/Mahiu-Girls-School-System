@@ -3,6 +3,7 @@ from models import db, Teacher, User
 from werkzeug.security import generate_password_hash
 from utils.auth_utils import token_required
 from utils.helpers import generate_employee_number, generate_random_password
+from sqlalchemy import or_, func
 
 teacher_bp = Blueprint('teachers', __name__)
 
@@ -21,6 +22,7 @@ def list_teachers(current_user):
         'employee_number': t.employee_number,
         'gender': t.gender,
         'contact': t.contact,
+        'date_of_birth': t.date_of_birth,
         'qualifications': t.qualifications
     } for t in teachers]), 200
 
@@ -39,6 +41,7 @@ def create_teacher(current_user):
     password = data.get('password')  # Required
     gender = data.get('gender', '')
     contact = data.get('contact', '')
+    date_of_birth = data.get('date_of_birth', '')
     qualifications = data.get('qualifications', '')
 
     if not all([name, email, password]):
@@ -64,6 +67,7 @@ def create_teacher(current_user):
         employee_number=generate_employee_number(),
         gender=gender,
         contact=contact,
+        date_of_birth=date_of_birth,
         qualifications=qualifications
     )
     db.session.add(new_teacher)
@@ -90,6 +94,7 @@ def get_teacher(current_user, teacher_id):
         'employee_number': teacher.employee_number,
         'gender': teacher.gender,
         'contact': teacher.contact,
+        'date_of_birth': teacher.date_of_birth,
         'qualifications': teacher.qualifications
     }), 200
 
@@ -117,6 +122,8 @@ def update_teacher(current_user, teacher_id):
     db.session.commit()
     return jsonify({'message': 'Teacher updated successfully'}), 200
 
+# Delete Teacher
+
 @teacher_bp.route('/<int:teacher_id>', methods=['DELETE'])
 @token_required
 def delete_teacher(current_user, teacher_id):
@@ -131,3 +138,41 @@ def delete_teacher(current_user, teacher_id):
     db.session.commit()
 
     return jsonify({'message': 'Teacher and associated user deleted'}), 200
+
+#Search for a teacher
+from sqlalchemy import or_, func
+
+@teacher_bp.route('/search', methods=['GET'])
+@token_required
+def search_teachers(current_user):
+    if current_user.role != 'admin':
+        return jsonify({'error': 'Unauthorized'}), 403
+
+    query_param = request.args.get('q', '').strip().lower()
+    if not query_param:
+        return jsonify([]), 200
+
+    search = f"%{query_param}%"
+
+    results = (
+        Teacher.query.join(User)
+        .filter(
+            or_(
+                func.lower(User.name).like(search),
+                func.lower(User.email).like(search),
+                func.lower(Teacher.employee_number).like(search)
+            )
+        )
+        .all()
+    )
+
+    return jsonify([{
+        'teacher_id': t.teacher_id,
+        'name': t.user.name,
+        'email': t.user.email,
+        'employee_number': t.employee_number,
+        'gender': t.gender,
+        'contact': t.contact,
+        'qualifications': t.qualifications
+    } for t in results]), 200
+

@@ -10,6 +10,7 @@ interface Teacher {
   employee_number: string
   gender: string
   contact: string
+  date_of_birth: string
   qualifications: string
 }
 
@@ -23,15 +24,23 @@ export default function AdminTeachers() {
   const [perPage] = useState(10)
   const [totalPages, setTotalPages] = useState(1)
 
+  const [searchTerm, setSearchTerm] = useState('')
+  const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null)
+
   const fetchTeachers = async () => {
     try {
       setLoading(true)
       const token = localStorage.getItem("token")
-      const res = await axios.get(`http://localhost:5001/api/v1/teachers?page=${currentPage}&per_page=${perPage}`, {
-        headers: { Authorization: `Bearer ${token}` },
+      const baseUrl = 'http://localhost:5001/api/v1/teachers'
+      const url = searchTerm
+        ? `${baseUrl}/search?q=${encodeURIComponent(searchTerm)}`
+        : `${baseUrl}?page=${currentPage}&per_page=${perPage}`
+
+      const res = await axios.get(url, {
+        headers: { Authorization: `Bearer ${token}` }
       })
 
-      setTeachers(res.data.teachers || res.data) // fallback if backend isn't paginating
+      setTeachers(res.data.teachers || res.data)
       if (res.data.total) {
         setTotalPages(Math.ceil(res.data.total / perPage))
       }
@@ -57,21 +66,45 @@ export default function AdminTeachers() {
 
   useEffect(() => {
     fetchTeachers()
-  }, [currentPage])
+  }, [currentPage, searchTerm])
+
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value
+    setSearchTerm(val)
+    setCurrentPage(1)
+
+    if (searchTimeout) clearTimeout(searchTimeout)
+
+    const timeout = setTimeout(() => {
+      fetchTeachers()
+    }, 500)
+
+    setSearchTimeout(timeout)
+  }
 
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-6">👩‍🏫 Manage Teachers</h1>
 
-      <button
-        onClick={() => {
-          setEditingTeacher(null)
-          setShowForm(true)
-        }}
-        className="mb-4 px-4 py-2 bg-blue-600 text-white rounded"
-      >
-        ➕ Add Teacher
-      </button>
+      <div className="flex items-center gap-4 mb-4">
+        <button
+          onClick={() => {
+            setEditingTeacher(null)
+            setShowForm(true)
+          }}
+          className="px-4 py-2 bg-blue-600 text-white rounded"
+        >
+          ➕ Add Teacher
+        </button>
+
+        <input
+          type="text"
+          value={searchTerm}
+          onChange={handleSearch}
+          placeholder="🔍 Search by name, email or emp #"
+          className="border px-3 py-2 rounded w-80"
+        />
+      </div>
 
       {loading ? (
         <p>Loading...</p>
@@ -85,6 +118,7 @@ export default function AdminTeachers() {
                 <th className="text-left p-2">Emp. #</th>
                 <th className="text-left p-2">Gender</th>
                 <th className="text-left p-2">Contact</th>
+                <th className="text-left p-2">Date Of Birth</th>
                 <th className="text-left p-2">Qualifications</th>
                 <th className="text-left p-2">Actions</th>
               </tr>
@@ -97,6 +131,7 @@ export default function AdminTeachers() {
                   <td className="p-2">{t.employee_number}</td>
                   <td className="p-2">{t.gender}</td>
                   <td className="p-2">{t.contact}</td>
+                  <td className="p-2">{t.date_of_birth}</td>
                   <td className="p-2">{t.qualifications}</td>
                   <td className="p-2 space-x-2">
                     <button
@@ -127,26 +162,28 @@ export default function AdminTeachers() {
             </tbody>
           </table>
 
-          {/* Pagination Controls */}
-          <div className="flex justify-center mt-4 space-x-2">
-            <button
-              disabled={currentPage === 1}
-              onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-              className="px-3 py-1 bg-gray-300 rounded disabled:opacity-50"
-            >
-              ⬅ Prev
-            </button>
-            <span className="px-4 py-1">
-              Page {currentPage} of {totalPages}
-            </span>
-            <button
-              disabled={currentPage === totalPages}
-              onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
-              className="px-3 py-1 bg-gray-300 rounded disabled:opacity-50"
-            >
-              Next ➡
-            </button>
-          </div>
+          {/* Only show pagination if not searching */}
+          {searchTerm === '' && (
+            <div className="flex justify-center mt-4 space-x-2">
+              <button
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                className="px-3 py-1 bg-gray-300 rounded disabled:opacity-50"
+              >
+                ⬅ Prev
+              </button>
+              <span className="px-4 py-1">
+                Page {currentPage} of {totalPages}
+              </span>
+              <button
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                className="px-3 py-1 bg-gray-300 rounded disabled:opacity-50"
+              >
+                Next ➡
+              </button>
+            </div>
+          )}
         </>
       )}
 
