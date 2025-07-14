@@ -8,7 +8,7 @@ import AdminTeachers from '../pages/admin/Teachers'
 
 const router = createBrowserRouter([
   {
-    path: '/login',
+    path: '/',
     element: <LoginPage />
   },
   {
