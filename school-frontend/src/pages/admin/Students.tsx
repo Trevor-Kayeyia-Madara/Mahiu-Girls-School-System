@@ -109,6 +109,7 @@ export default function AdminStudents() {
                 <th className="text-left p-2">Admission #</th>
                 <th className="text-left p-2">Name</th>
                 <th className="text-left p-2">Gender</th>
+                <th className="text-left p-2">Date Of Birth</th>
                 <th className="text-left p-2">Guardian</th>
                 <th className="text-left p-2">Class</th>
                 <th className="text-left p-2">Actions</th>
@@ -121,6 +122,7 @@ export default function AdminStudents() {
                     <td className="p-2">{s.admission_number}</td>
                     <td className="p-2">{s.first_name} {s.last_name}</td>
                     <td className="p-2">{s.gender}</td>
+                    <td className="p-2">{s.date_of_birth}</td>
                     <td className="p-2">{s.parent_id}</td>
                     <td className="p-2">{s.class_id}</td>
                     <td className="p-2 space-x-2">
