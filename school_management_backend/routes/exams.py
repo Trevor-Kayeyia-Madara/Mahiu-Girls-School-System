@@ -41,7 +41,7 @@ def get_exams_by_class_subject(current_user, class_id, subject_id):
 @exam_bp.route('/', methods=['POST'])
 @token_required
 def create_exam(current_user):
-    if current_user.role != 'admin':
+    if current_user.role not in ['admin', 'teacher']:
         return jsonify({'error': 'Unauthorized'}), 403
 
     data = request.get_json()

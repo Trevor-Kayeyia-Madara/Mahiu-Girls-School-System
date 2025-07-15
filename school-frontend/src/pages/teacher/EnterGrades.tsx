@@ -1,5 +1,5 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import axios from 'axios'
 
 interface Subject {
@@ -15,141 +15,238 @@ interface Student {
   last_name: string
 }
 
-interface GradeInput {
-  [student_id: number]: number | ''
+interface Exam {
+  exam_id: number
+  name: string
+  term: string
+  year: number
 }
+
+interface GradeView {
+  student_name: string
+  score: number
+}
+
+type ViewMode = 'entry' | 'view'
+const API = 'http://localhost:5001/api/v1'
 
 export default function TeacherGrades() {
   const [subjects, setSubjects] = useState<Subject[]>([])
-  const [selected, setSelected] = useState<number | null>(null)
+  const [selectedSubjectId, setSelectedSubjectId] = useState<number | null>(null)
   const [students, setStudents] = useState<Student[]>([])
-  const [grades, setGrades] = useState<GradeInput>({})
-  const [loading, setLoading] = useState(false)
+  const [grades, setGrades] = useState<{ [id: number]: number | '' }>({})
+  const [exams, setExams] = useState<Exam[]>([])
+  const [selectedExamId, setSelectedExamId] = useState<number | null>(null)
+  const [viewMode, setViewMode] = useState<ViewMode>('entry')
+  const [existingGrades, setExistingGrades] = useState<GradeView[]>([])
 
   const token = localStorage.getItem('token')
   const headers = { Authorization: `Bearer ${token}` }
 
-  const fetchSubjects = async () => {
-    try {
-      const res = await axios.get('http://localhost:5001/api/v1/teacher-subjects/me', { headers })
+  const selectedSubject = subjects.find(s => s.subject_id === selectedSubjectId)
 
-      if (Array.isArray(res.data)) {
-        setSubjects(res.data)
-      } else {
-        console.error('Expected an array of subjects, got:', res.data)
+  // 🔁 Fetch only subjects on mount
+  useEffect(() => {
+    axios.get(`${API}/teacher-subjects/me`, { headers })
+      .then(res => setSubjects(Array.isArray(res.data) ? res.data : []))
+      .catch(err => {
+        console.error('Failed to load subjects', err)
         setSubjects([])
-      }
-    } catch (err) {
-      console.error('Failed to load subjects', err)
-      setSubjects([])
-    }
-  }
-
-  const fetchStudents = async (class_id: number) => {
-    try {
-      setLoading(true)
-      const res = await axios.get(`http://localhost:5001/api/v1/students/class/${class_id}`, { headers })
-      setStudents(res.data)
-
-      const initialGrades: GradeInput = {}
-      res.data.forEach((s: Student) => {
-        initialGrades[s.student_id] = ''
       })
-      setGrades(initialGrades)
+  }, [])
+
+  const fetchStudents = useCallback(async (classId: number) => {
+    try {
+      const { data } = await axios.get(`${API}/students/class/${classId}`, { headers })
+      setStudents(data)
+      const initial: { [id: number]: number | '' } = {}
+      data.forEach((s: Student) => (initial[s.student_id] = ''))
+      setGrades(initial)
     } catch (err) {
-      console.error('Failed to load students', err)
-    } finally {
-      setLoading(false)
+      console.error('Failed to fetch students', err)
     }
+  }, [headers])
+
+  const fetchExams = useCallback(async (classId: number, subjectId: number) => {
+    try {
+      const { data } = await axios.get(`${API}/exams/class/${classId}/subject/${subjectId}`, { headers })
+      setExams(data)
+      setSelectedExamId(data[0]?.exam_id ?? null)
+    } catch (err) {
+      console.error('Failed to fetch exams', err)
+      setExams([])
+    }
+  }, [headers])
+
+  const loadData = async () => {
+    if (!selectedSubject) return
+    await fetchStudents(selectedSubject.class_id)
+    await fetchExams(selectedSubject.class_id, selectedSubject.subject_id)
   }
 
-  const handleSelect = (id: number) => {
-    setSelected(id)
-    const subject = subjects.find(s => s.subject_id === id)
-    if (subject) fetchStudents(subject.class_id)
-  }
-
-  const handleInput = (student_id: number, score: string) => {
-    const value = parseFloat(score)
-    setGrades((prev) => ({
-      ...prev,
-      [student_id]: isNaN(value) ? '' : value
-    }))
-  }
-
-  const handleSubmit = async () => {
-    const subject = subjects.find(s => s.subject_id === selected)
-    if (!subject) return
+  const handleSubmitGrades = async () => {
+    if (!selectedExamId || !selectedSubject) return alert('Select subject and exam first.')
 
     const payload = Object.entries(grades)
-      .filter(([val]) => val !== '')
-      .map(([student_id, score]) => ({
-        student_id: Number(student_id),
+      .filter(([, v]) => v !== '')
+      .map(([id, score]) => ({
+        student_id: parseInt(id),
         score,
-        class_id: subject.class_id,
-        subject_id: subject.subject_id,
-        exam_id: 1 // can be dynamic
+        class_id: selectedSubject.class_id,
+        subject_id: selectedSubject.subject_id,
+        exam_id: selectedExamId
       }))
 
     try {
-      await axios.post('http://localhost:5001/api/v1/grades/bulk', payload, { headers })
-      alert('✅ Grades saved successfully!')
+      await axios.post(`${API}/grades/bulk`, payload, { headers })
+      alert('✅ Grades submitted successfully')
     } catch (err) {
-      console.error('❌ Failed to save grades', err)
-      alert('Failed to save grades.')
+      console.error('Error submitting grades', err)
+      alert('❌ Failed to submit grades')
     }
   }
 
-  useEffect(() => {
-    fetchSubjects()
-  }, [])
+  const handleCreateExam = async () => {
+    if (!selectedSubject) return
+
+    const name = prompt('Enter exam name (e.g. CAT 2):')?.trim()
+    const term = prompt('Enter term (e.g. Term 2):')?.trim()
+    const year = prompt('Enter year (e.g. 2025):')?.trim()
+
+    if (!name || !term || !year) return alert('All fields are required.')
+
+    try {
+      await axios.post(`${API}/exams`, {
+        name, term, year,
+        subject_id: selectedSubject.subject_id,
+        class_id: selectedSubject.class_id
+      }, { headers })
+
+      alert('✅ Exam created')
+      fetchExams(selectedSubject.class_id, selectedSubject.subject_id)
+    } catch (err) {
+      console.error('Failed to create exam', err)
+      alert('❌ Exam creation failed')
+    }
+  }
+
+  const handleViewGrades = async () => {
+    if (!selectedExamId || !selectedSubject) return
+
+    try {
+      const { data } = await axios.get(
+        `${API}/grades/class/${selectedSubject.class_id}/subject/${selectedSubject.subject_id}/exam/${selectedExamId}`,
+        { headers }
+      )
+      setExistingGrades(data)
+    } catch (err) {
+      console.error('Failed to view grades', err)
+      setExistingGrades([])
+    }
+  }
 
   return (
     <div className="p-6">
-      <h1 className="text-xl font-bold mb-4">📝 Grade Entry</h1>
+      <div className="mb-4 flex justify-between items-center">
+        <h1 className="text-xl font-bold">🎯 Grades Portal</h1>
+        <div className="space-x-2">
+          <button
+            onClick={() => setViewMode('entry')}
+            className={`px-3 py-1 rounded ${viewMode === 'entry' ? 'bg-blue-600 text-white' : 'bg-gray-300'}`}
+          >
+            ➕ Enter Grades
+          </button>
+          <button
+            onClick={() => {
+              setViewMode('view')
+              handleViewGrades()
+            }}
+            className={`px-3 py-1 rounded ${viewMode === 'view' ? 'bg-blue-600 text-white' : 'bg-gray-300'}`}
+          >
+            📄 View Grades
+          </button>
+        </div>
+      </div>
 
       {/* Subject Selector */}
       <div className="mb-4">
-        <label className="font-medium block mb-1">Select Subject</label>
+        <label className="block font-medium mb-1">Select Subject</label>
         <select
-          value={selected ?? ''}
-          onChange={(e) => handleSelect(Number(e.target.value))}
-          className="border p-2 rounded w-full max-w-md"
+          value={selectedSubjectId ?? ''}
+          onChange={(e) => setSelectedSubjectId(Number(e.target.value))}
+          className="w-full max-w-md border p-2 rounded"
         >
-          <option value="">-- Choose --</option>
-          {Array.isArray(subjects) && subjects.map((s) => (
+          <option value="">-- Choose Subject --</option>
+          {subjects.map((s) => (
             <option key={s.subject_id} value={s.subject_id}>
               {s.class_name} - {s.name}
             </option>
           ))}
         </select>
+        {selectedSubject && (
+          <button
+            onClick={loadData}
+            className="mt-2 px-4 py-1 bg-indigo-600 text-white rounded"
+          >
+            📥 Load Students & Exams
+          </button>
+        )}
       </div>
 
-      {loading ? (
-        <p>Loading students...</p>
-      ) : students.length > 0 ? (
+      {/* Exam Picker */}
+      {selectedSubject && (
+        <div className="mb-4 flex items-center space-x-4">
+          <div className="flex-1">
+            <label className="block font-medium mb-1">Select Exam</label>
+            <select
+              value={selectedExamId ?? ''}
+              onChange={(e) => setSelectedExamId(Number(e.target.value))}
+              className="w-full border p-2 rounded"
+            >
+              <option value="">-- Choose Exam --</option>
+              {exams.map((e) => (
+                <option key={e.exam_id} value={e.exam_id}>
+                  {e.name} ({e.term} {e.year})
+                </option>
+              ))}
+            </select>
+          </div>
+          <button
+            onClick={handleCreateExam}
+            className="mt-6 bg-green-600 text-white px-4 py-2 rounded"
+          >
+            ➕ New Exam
+          </button>
+        </div>
+      )}
+
+      {/* Entry Mode */}
+      {viewMode === 'entry' && students.length > 0 && (
         <>
-          <table className="w-full border rounded mt-4 bg-white">
+          <table className="w-full bg-white table-auto shadow rounded">
             <thead className="bg-gray-100">
               <tr>
-                <th className="text-left p-2">#</th>
-                <th className="text-left p-2">Name</th>
-                <th className="text-left p-2">Score</th>
+                <th className="p-2 text-left">#</th>
+                <th className="p-2 text-left">Student</th>
+                <th className="p-2 text-left">Score</th>
               </tr>
             </thead>
             <tbody>
-              {students.map((s, index) => (
+              {students.map((s, i) => (
                 <tr key={s.student_id} className="border-t">
-                  <td className="p-2">{index + 1}</td>
+                  <td className="p-2">{i + 1}</td>
                   <td className="p-2">{s.first_name} {s.last_name}</td>
                   <td className="p-2">
                     <input
                       type="number"
                       min={0}
                       max={100}
+                      className="border p-1 rounded w-24"
                       value={grades[s.student_id]}
-                      onChange={(e) => handleInput(s.student_id, e.target.value)}
-                      className="w-24 border rounded p-1"
+                      onChange={(e) => setGrades(prev => ({
+                        ...prev,
+                        [s.student_id]: parseFloat(e.target.value) || ''
+                      }))}
                     />
                   </td>
                 </tr>
@@ -158,14 +255,38 @@ export default function TeacherGrades() {
           </table>
 
           <button
-            onClick={handleSubmit}
+            onClick={handleSubmitGrades}
             className="mt-4 bg-blue-600 text-white px-4 py-2 rounded"
           >
-            💾 Submit Grades
+            💾 Submit
           </button>
         </>
-      ) : (
-        selected && <p className="text-gray-500">No students found for this class.</p>
+      )}
+
+      {/* View Mode */}
+      {viewMode === 'view' && (
+        <>
+          {existingGrades.length > 0 ? (
+            <table className="w-full table-auto bg-white shadow mt-4 rounded">
+              <thead className="bg-gray-100">
+                <tr>
+                  <th className="p-2 text-left">Student</th>
+                  <th className="p-2 text-left">Score</th>
+                </tr>
+              </thead>
+              <tbody>
+                {existingGrades.map((g, i) => (
+                  <tr key={i} className="border-t">
+                    <td className="p-2">{g.student_name}</td>
+                    <td className="p-2">{g.score}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <p className="text-gray-600 mt-4">No grades found for this selection.</p>
+          )}
+        </>
       )}
     </div>
   )
