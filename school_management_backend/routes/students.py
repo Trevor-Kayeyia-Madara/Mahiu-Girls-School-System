@@ -103,3 +103,26 @@ def delete_student(current_user, student_id):
     db.session.delete(student)
     db.session.commit()
     return jsonify({'message': 'Student deleted'}), 200
+
+# 📄 Get students by class
+@student_bp.route('/class/<int:class_id>', methods=['GET'])
+@token_required
+def get_students_by_class(current_user, class_id):
+    if current_user.role not in ['admin', 'teacher']:
+        return jsonify({'error': 'Unauthorized'}), 403
+
+    students = Student.query.filter_by(class_id=class_id).all()
+    
+    return jsonify([{
+        'student_id': s.student_id,
+        'first_name': s.first_name,
+        'last_name': s.last_name,
+        'admission_number': s.admission_number,
+        'gender': s.gender,
+        'date_of_birth': s.date_of_birth,
+        'class_id': s.class_id,
+        'class_name': s.classroom.class_name if s.classroom else None,
+        'parent_id': s.parent_id,
+        'parent_name': s.parent.user.name if s.parent else None
+    } for s in students]), 200
+
