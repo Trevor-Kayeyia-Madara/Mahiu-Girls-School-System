@@ -163,3 +163,25 @@ def export_class_timetable_pdf(current_user, class_id):
         download_name=f'class_{class_id}_timetable.pdf',
         mimetype='application/pdf'
     )
+
+@timetable_bp.route('/me', methods=['GET','OPTIONS'])
+@token_required
+def get_own_timetable(current_user):
+    if current_user.role != 'teacher':
+        return jsonify({'error': 'Only teachers can access their own timetable'}), 403
+
+    teacher = Teacher.query.filter_by(user_id=current_user.user_id).first()
+    if not teacher:
+        return jsonify({'error': 'No teacher profile found'}), 404
+
+    entries = TimetableEntry.query.filter_by(teacher_id=teacher.teacher_id).all()
+    result = [{
+        'id': e.id,
+        'class': e.classroom.class_name,
+        'day': e.day,
+        'start_time': e.start_time.strftime('%H:%M'),
+        'end_time': e.end_time.strftime('%H:%M'),
+        'subject': e.subject.name
+    } for e in entries]
+
+    return jsonify(result), 200
