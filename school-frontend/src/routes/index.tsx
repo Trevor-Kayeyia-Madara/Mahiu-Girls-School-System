@@ -12,6 +12,9 @@ import AdminAssignments from '../pages/admin/Assignments'
 import AdminGrades from '../pages/admin/Grades'
 import AdminTimetable from '../pages/admin/Timetable'
 import AdminReports from '../pages/admin/Reports'
+import TeacherLayout from '../layouts/TeacherLayout'
+import TeacherDashboard from '../pages/teacher/Dashboard'
+import RequireAuth from './RequireAuth'
 
 const router = createBrowserRouter([
   {
@@ -39,6 +42,18 @@ const router = createBrowserRouter([
         ]
       }
     ]
+  },
+  {
+    path: "/teacher",
+    element: (
+      <RequireAuth role="teacher">
+        <TeacherLayout />
+      </RequireAuth>
+    ),
+    children: [
+      { path: "", element: <TeacherDashboard /> },
+      // { path: "timetable", element: <TeacherTimetable /> },
+    ],
   },
   {
     path: '*',
