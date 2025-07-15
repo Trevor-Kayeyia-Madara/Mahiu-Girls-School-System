@@ -11,6 +11,7 @@ import AdminSubjects from '../pages/admin/Subjects'
 import AdminAssignments from '../pages/admin/Assignments'
 import AdminGrades from '../pages/admin/Grades'
 import AdminTimetable from '../pages/admin/Timetable'
+import AdminReports from '../pages/admin/Reports'
 
 const router = createBrowserRouter([
   {
@@ -32,7 +33,8 @@ const router = createBrowserRouter([
           {path:'subjects', element: <AdminSubjects />},
           {path: 'assignments', element: <AdminAssignments />},
           {path:'grades', element: <AdminGrades />},
-          {path:'timetable', element: <AdminTimetable />}
+          {path:'timetable', element: <AdminTimetable />},
+          {path:'reports', element: <AdminReports />}
           // Placeholder: Add more admin children routes here later
         ]
       }
