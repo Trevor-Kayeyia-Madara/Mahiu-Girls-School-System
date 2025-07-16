@@ -7,6 +7,7 @@ interface Subject {
   name: string
   class_id: number
   class_name: string
+  form_level?: string
 }
 
 interface Student {
@@ -44,8 +45,8 @@ export default function TeacherGrades() {
   const headers = { Authorization: `Bearer ${token}` }
 
   const selectedSubject = subjects.find(s => s.subject_id === selectedSubjectId)
+  const selectedExam = exams.find(e => e.exam_id === selectedExamId)
 
-  // 🔁 Fetch only subjects on mount
   useEffect(() => {
     axios.get(`${API}/teacher-subjects/me`, { headers })
       .then(res => setSubjects(Array.isArray(res.data) ? res.data : []))
@@ -145,6 +146,12 @@ export default function TeacherGrades() {
     }
   }
 
+  const getMaxScore = () => {
+    const isCAT = selectedExam?.name?.toLowerCase().includes('cat')
+    const isForm1or2 = selectedSubject?.form_level?.includes('Form 1') || selectedSubject?.form_level?.includes('Form 2')
+    return isCAT && isForm1or2 ? 50 : 100
+  }
+
   return (
     <div className="p-6">
       <div className="mb-4 flex justify-between items-center">
@@ -168,7 +175,7 @@ export default function TeacherGrades() {
         </div>
       </div>
 
-      {/* Subject Selector */}
+      {/* Subject Dropdown */}
       <div className="mb-4">
         <label className="block font-medium mb-1">Select Subject</label>
         <select
@@ -179,10 +186,11 @@ export default function TeacherGrades() {
           <option value="">-- Choose Subject --</option>
           {subjects.map((s) => (
             <option key={s.subject_id} value={s.subject_id}>
-              {s.class_name} - {s.name}
+              {s.class_name} - {s.name} {s.form_level ? `(${s.form_level})` : ''}
             </option>
           ))}
         </select>
+
         {selectedSubject && (
           <button
             onClick={loadData}
@@ -220,7 +228,7 @@ export default function TeacherGrades() {
         </div>
       )}
 
-      {/* Entry Mode */}
+      {/* Grade Entry Mode */}
       {viewMode === 'entry' && students.length > 0 && (
         <>
           <table className="w-full bg-white table-auto shadow rounded">
@@ -228,7 +236,7 @@ export default function TeacherGrades() {
               <tr>
                 <th className="p-2 text-left">#</th>
                 <th className="p-2 text-left">Student</th>
-                <th className="p-2 text-left">Score</th>
+                <th className="p-2 text-left">Score (Max: {getMaxScore()})</th>
               </tr>
             </thead>
             <tbody>
@@ -240,7 +248,7 @@ export default function TeacherGrades() {
                     <input
                       type="number"
                       min={0}
-                      max={100}
+                      max={getMaxScore()}
                       className="border p-1 rounded w-24"
                       value={grades[s.student_id]}
                       onChange={(e) => setGrades(prev => ({
@@ -258,7 +266,7 @@ export default function TeacherGrades() {
             onClick={handleSubmitGrades}
             className="mt-4 bg-blue-600 text-white px-4 py-2 rounded"
           >
-            💾 Submit
+            💾 Submit Grades
           </button>
         </>
       )}
