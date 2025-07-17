@@ -14,4 +14,3 @@ class Classroom(db.Model):
     # Relationships
     class_teacher = db.relationship('Teacher', back_populates='classrooms')
     students = db.relationship('Student', backref='classroom')
-    teacher_subjects = db.relationship('TeacherSubject', backref='classroom')

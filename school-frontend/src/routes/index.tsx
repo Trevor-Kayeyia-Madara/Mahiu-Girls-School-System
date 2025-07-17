@@ -18,6 +18,7 @@ import TeacherTimetable from '../pages/teacher/Timetable'
 import ExamsPage from '../pages/teacher/ExamsPage'
 import TeacherExamEntry from '../pages/teacher/ExamEntry'
 import OverallGradesSummary from '../pages/teacher/OverallGradesSummary'
+import TeacherSubjects from '../pages/teacher/Subjects'
 
 const router = createBrowserRouter([
   {
@@ -57,7 +58,8 @@ const router = createBrowserRouter([
           {path:'timetable', element: <TeacherTimetable />},
           {path: 'exam', element: <ExamsPage />},
           {path:'teacher-exam', element: <TeacherExamEntry />},
-          {path:'grade-summary', element:<OverallGradesSummary />}
+          {path:'grade-summary', element:<OverallGradesSummary />},
+          {path:'subjects', element: <TeacherSubjects token={''} />}
           // Placeholder: Add more admin children routes here later
         ]
       }

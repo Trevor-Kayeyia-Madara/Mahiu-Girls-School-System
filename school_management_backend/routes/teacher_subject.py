@@ -1,11 +1,12 @@
+# routes/teacher_subject.py
+
 from flask import Blueprint, jsonify
 from app import db
-from models import Teacher, ClassAssignment
+from models import Teacher, TeacherSubject, Subject
 from utils.auth_utils import token_required
 
 teacher_subject_bp = Blueprint('teacher_subject', __name__)
 
-# 🟢 GET all subject/class combinations for the logged-in teacher
 @teacher_subject_bp.route('/me', methods=['GET'])
 @token_required
 def get_teacher_subjects(current_user):
@@ -16,19 +17,16 @@ def get_teacher_subjects(current_user):
     if not teacher:
         return jsonify({'error': 'Teacher profile not found'}), 404
 
-    assignments = (
-        ClassAssignment.query
+    teacher_subjects = (
+        TeacherSubject.query
         .filter_by(teacher_id=teacher.teacher_id)
-        .join(ClassAssignment.subject)
-        .join(ClassAssignment.classroom)
+        .join(Subject, TeacherSubject.subject_id == Subject.subject_id)
         .all()
     )
 
     result = [{
-        'subject_id': a.subject.subject_id,
-        'name': a.subject.name,
-        'class_id': a.classroom.class_id,
-        'class_name': a.classroom.class_name
-    } for a in assignments]
+        'subject_id': ts.subject_id,
+        'subject_name': ts.subject.name
+    } for ts in teacher_subjects]
 
     return jsonify(result), 200
