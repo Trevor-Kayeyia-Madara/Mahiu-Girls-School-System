@@ -8,8 +8,8 @@ interface Assignment {
   subject_name: string
 }
 
-interface Exam {
-  exam_id: number
+interface ExamSchedule {
+  exam_schedule_id: number
   name: string
   term: string
   year: number
@@ -43,12 +43,12 @@ function getKCSEGrade(score: number) {
 export default function TeacherExamEntry() {
   const [assignments, setAssignments] = useState<Assignment[]>([])
   const [selectedAssignment, setSelectedAssignment] = useState<Assignment | null>(null)
-  const [exams, setExams] = useState<Exam[]>([])
-  const [selectedExamId, setSelectedExamId] = useState<number | null>(null)
+  const [examSchedules, setExamSchedules] = useState<ExamSchedule[]>([])
+  const [selectedExamScheduleId, setSelectedExamScheduleId] = useState<number | null>(null)
   const [students, setStudents] = useState<Student[]>([])
   const [grades, setGrades] = useState<{ [studentId: number]: number | '' }>({})
 
-  // Fetch assigned class-subjects for the teacher
+  // Fetch teacher's assignments
   useEffect(() => {
     axios.get(`${API}/assignments/me`, { headers })
       .then(res => setAssignments(res.data))
@@ -58,15 +58,15 @@ export default function TeacherExamEntry() {
   const handleAssignmentChange = (subjectId: number) => {
     const assignment = assignments.find(a => a.subject_id === subjectId)
     setSelectedAssignment(assignment ?? null)
-    setSelectedExamId(null)
-    setExams([])
+    setSelectedExamScheduleId(null)
+    setExamSchedules([])
     setStudents([])
     setGrades({})
 
     if (assignment) {
       axios.get(`${API}/exams/class/${assignment.class_id}/subject/${assignment.subject_id}`, { headers })
-        .then(res => setExams(res.data))
-        .catch(err => console.error('Failed to fetch exams', err))
+        .then(res => setExamSchedules(res.data))
+        .catch(err => console.error('Failed to fetch exam schedules', err))
 
       axios.get(`${API}/students/class/${assignment.class_id}`, { headers })
         .then(res => {
@@ -88,22 +88,24 @@ export default function TeacherExamEntry() {
   }
 
   const handleSubmit = async () => {
-    if (!selectedAssignment || !selectedExamId) return alert('Select both subject and exam.')
+    if (!selectedExamScheduleId) {
+      return alert('Please select an exam.')
+    }
 
-    const payload = Object.entries(grades)
-      .filter(([, score]) => score !== '')
-      .map(([student_id, score]) => ({
-        student_id: Number(student_id),
-        score,
-        class_id: selectedAssignment.class_id,
-        subject_id: selectedAssignment.subject_id,
-        exam_id: selectedExamId
-      }))
+    const payload = {
+      exam_schedule_id: selectedExamScheduleId,
+      grades: Object.entries(grades)
+        .filter(([, score]) => score !== '')
+        .map(([student_id, score]) => ({
+          student_id: Number(student_id),
+          marks: score
+        }))
+    }
 
-    if (!payload.length) return alert('No grades entered.')
+    if (!payload.grades.length) return alert('No grades entered.')
 
     try {
-      await axios.post(`${API}/grades/bulk`, payload, { headers })
+      await axios.post(`${API}/grades`, payload, { headers })
       alert('✅ Grades submitted successfully.')
     } catch (err) {
       console.error('Error submitting grades:', err)
@@ -136,12 +138,12 @@ export default function TeacherExamEntry() {
           <label className="font-medium">Select Exam</label>
           <select
             className="w-full p-2 border rounded mt-1"
-            value={selectedExamId ?? ''}
-            onChange={e => setSelectedExamId(Number(e.target.value))}
+            value={selectedExamScheduleId ?? ''}
+            onChange={e => setSelectedExamScheduleId(Number(e.target.value))}
           >
             <option value="">-- Choose --</option>
-            {exams.map(e => (
-              <option key={e.exam_id} value={e.exam_id}>
+            {examSchedules.map(e => (
+              <option key={e.exam_schedule_id} value={e.exam_schedule_id}>
                 {e.name} ({e.term} {e.year})
               </option>
             ))}
