@@ -13,3 +13,4 @@ from .announcement import Announcement
 from .message import Message
 from .announcement_read import AnnouncementRead
 from .timetable_entry import TimetableEntry
+from .exam_schedule import ExamSchedule

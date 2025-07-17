@@ -3,16 +3,16 @@ from app import db
 
 class Grade(db.Model):
     __tablename__ = 'grades'
+
     grade_id = db.Column(db.Integer, primary_key=True)
-
     student_id = db.Column(db.Integer, db.ForeignKey('students.student_id'), nullable=False)
-    class_id = db.Column(db.Integer, db.ForeignKey('classrooms.class_id'), nullable=False)
-    subject_id = db.Column(db.Integer, db.ForeignKey('subjects.subject_id'), nullable=False)
-    teacher_id = db.Column(db.Integer, db.ForeignKey('teachers.teacher_id'), nullable=True)
-    exam_id = db.Column(db.Integer, db.ForeignKey('exams.exam_id'), nullable=False)
+    exam_schedule_id = db.Column(db.Integer, db.ForeignKey('exam_schedules.id'), nullable=False)
 
-    term = db.Column(db.String(10), nullable=False)
-    year = db.Column(db.Integer, nullable=False)
-    score = db.Column(db.Float)
-
+    marks = db.Column(db.Float, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Relationships
+    exam_schedule = db.relationship('ExamSchedule', backref='grades')
+
+    def __repr__(self):
+        return f"<Grade Student={self.student_id}, Marks={self.marks}, ExamSchedule={self.exam_schedule_id}>"

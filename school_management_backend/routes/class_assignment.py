@@ -63,3 +63,25 @@ def delete_assignment(current_user, class_id, subject_id):
     db.session.delete(assignment)
     db.session.commit()
     return jsonify({'message': 'Assignment removed'}), 200
+
+# 📚 Get all class-subject assignments for the current teacher
+@assignment_bp.route('/me', methods=['GET'])
+@token_required
+def get_my_class_subjects(current_user):
+    if current_user.role != 'teacher':
+        return jsonify({'error': 'Unauthorized'}), 403
+
+    assignments = ClassAssignment.query \
+        .filter_by(teacher_id=current_user.id) \
+        .join(Subject) \
+        .join(Classroom) \
+        .all()
+
+    result = [{
+        'class_id': a.class_id,
+        'class_name': a.classroom.name,
+        'subject_id': a.subject_id,
+        'subject_name': a.subject.name
+    } for a in assignments]
+
+    return jsonify(result), 200

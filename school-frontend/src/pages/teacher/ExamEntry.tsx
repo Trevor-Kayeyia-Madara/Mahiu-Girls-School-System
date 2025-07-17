@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react'
 import axios from 'axios'
 
-interface Subject {
-  subject_id: number
-  name: string
+interface Assignment {
   class_id: number
   class_name: string
+  subject_id: number
+  subject_name: string
 }
 
 interface Exam {
@@ -41,33 +41,34 @@ function getKCSEGrade(score: number) {
 }
 
 export default function TeacherExamEntry() {
-  const [subjects, setSubjects] = useState<Subject[]>([])
-  const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null)
+  const [assignments, setAssignments] = useState<Assignment[]>([])
+  const [selectedAssignment, setSelectedAssignment] = useState<Assignment | null>(null)
   const [exams, setExams] = useState<Exam[]>([])
   const [selectedExamId, setSelectedExamId] = useState<number | null>(null)
   const [students, setStudents] = useState<Student[]>([])
   const [grades, setGrades] = useState<{ [studentId: number]: number | '' }>({})
 
-  // Fetch subjects
+  // Fetch assigned class-subjects for the teacher
   useEffect(() => {
-    axios.get(`${API}/teacher-subjects/me`, { headers })
-      .then(res => setSubjects(res.data))
-      .catch(err => console.error('Failed to fetch subjects', err))
+    axios.get(`${API}/assignments/me`, { headers })
+      .then(res => setAssignments(res.data))
+      .catch(err => console.error('Failed to fetch assignments', err))
   }, [])
 
-  const handleSubjectChange = (subjectId: number) => {
-    const sub = subjects.find(s => s.subject_id === subjectId)
-    setSelectedSubject(sub ?? null)
+  const handleAssignmentChange = (subjectId: number) => {
+    const assignment = assignments.find(a => a.subject_id === subjectId)
+    setSelectedAssignment(assignment ?? null)
     setSelectedExamId(null)
     setExams([])
     setStudents([])
     setGrades({})
-    if (sub) {
-      axios.get(`${API}/exams/class/${sub.class_id}/subject/${sub.subject_id}`, { headers })
+
+    if (assignment) {
+      axios.get(`${API}/exams/class/${assignment.class_id}/subject/${assignment.subject_id}`, { headers })
         .then(res => setExams(res.data))
         .catch(err => console.error('Failed to fetch exams', err))
 
-      axios.get(`${API}/students/class/${sub.class_id}`, { headers })
+      axios.get(`${API}/students/class/${assignment.class_id}`, { headers })
         .then(res => {
           const initialGrades: { [id: number]: number | '' } = {}
           res.data.forEach((s: Student) => { initialGrades[s.student_id] = '' })
@@ -87,15 +88,15 @@ export default function TeacherExamEntry() {
   }
 
   const handleSubmit = async () => {
-    if (!selectedSubject || !selectedExamId) return alert('Select both subject and exam.')
+    if (!selectedAssignment || !selectedExamId) return alert('Select both subject and exam.')
 
     const payload = Object.entries(grades)
       .filter(([, score]) => score !== '')
       .map(([student_id, score]) => ({
         student_id: Number(student_id),
         score,
-        class_id: selectedSubject.class_id,
-        subject_id: selectedSubject.subject_id,
+        class_id: selectedAssignment.class_id,
+        subject_id: selectedAssignment.subject_id,
         exam_id: selectedExamId
       }))
 
@@ -118,19 +119,19 @@ export default function TeacherExamEntry() {
         <label className="font-medium">Select Subject</label>
         <select
           className="w-full p-2 border rounded mt-1"
-          value={selectedSubject?.subject_id ?? ''}
-          onChange={e => handleSubjectChange(Number(e.target.value))}
+          value={selectedAssignment?.subject_id ?? ''}
+          onChange={e => handleAssignmentChange(Number(e.target.value))}
         >
           <option value="">-- Choose --</option>
-          {subjects.map(s => (
-            <option key={s.subject_id} value={s.subject_id}>
-              {s.class_name} - {s.name}
+          {assignments.map((a, index) => (
+            <option key={index} value={a.subject_id}>
+              {a.class_name} - {a.subject_name}
             </option>
           ))}
         </select>
       </div>
 
-      {selectedSubject && (
+      {selectedAssignment && (
         <div className="mb-4">
           <label className="font-medium">Select Exam</label>
           <select

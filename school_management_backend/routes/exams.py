@@ -1,7 +1,7 @@
 # routes/exams.py
 from flask import Blueprint, request, jsonify
 from app import db
-from models import Exam, Subject, Classroom
+from models import Exam
 from utils.auth_utils import token_required
 
 exam_bp = Blueprint('exams', __name__)
@@ -16,10 +16,6 @@ def get_all_exams(current_user):
         'name': e.name,
         'term': e.term,
         'year': e.year,
-        'subject_id': e.subject_id,
-        'subject_name': e.subject.name,
-        'class_id': e.class_id,
-        'class_name': e.classroom.class_name,
         'created_at': e.created_at.isoformat()
     } for e in exams]
 
@@ -48,18 +44,15 @@ def create_exam(current_user):
     name = data.get('name')
     term = data.get('term')
     year = data.get('year')
-    subject_id = data.get('subject_id')
-    class_id = data.get('class_id')
 
-    if not all([name, term, year, subject_id, class_id]):
+
+    if not all([name, term, year]):
         return jsonify({'error': 'Missing required fields'}), 400
 
     exam = Exam(
         name=name,
         term=term,
         year=year,
-        subject_id=subject_id,
-        class_id=class_id
     )
     db.session.add(exam)
     db.session.commit()
@@ -79,8 +72,6 @@ def update_exam(current_user, exam_id):
     exam.name = data.get('name', exam.name)
     exam.term = data.get('term', exam.term)
     exam.year = data.get('year', exam.year)
-    exam.subject_id = data.get('subject_id', exam.subject_id)
-    exam.class_id = data.get('class_id', exam.class_id)
 
     db.session.commit()
     return jsonify({'message': 'Exam updated'}), 200
