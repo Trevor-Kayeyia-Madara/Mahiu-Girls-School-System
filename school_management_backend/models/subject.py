@@ -8,5 +8,5 @@ class Subject(db.Model):
     group = db.Column(db.String(20))  # science, language, elective
     compulsory = db.Column(db.Boolean, default=False)
 
-    teacher_subjects = db.relationship('TeacherSubject', backref='subject')
+    teacher_subjects = db.relationship('TeacherSubject', back_populates='subject')
     grades = db.relationship('Grade', backref='subject')

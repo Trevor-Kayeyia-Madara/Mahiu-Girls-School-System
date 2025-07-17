@@ -19,6 +19,7 @@ class Teacher(db.Model):
     classrooms = db.relationship('Classroom', back_populates='class_teacher')
 
     subject_assignments = db.relationship('ClassAssignment', back_populates='assigned_teacher', overlaps="teacher")
+    teacher_subjects = db.relationship('TeacherSubject', back_populates='teacher')
 
 
 def generate_sequential_employee_number():
