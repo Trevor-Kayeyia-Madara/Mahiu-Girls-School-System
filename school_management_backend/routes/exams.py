@@ -9,7 +9,7 @@ exam_bp = Blueprint('exams', __name__)
 # 📄 GET all exams
 @exam_bp.route('/', methods=['GET'])
 @token_required
-def get_all_exams():
+def get_all_exams(current_user):
     exams = Exam.query.all()
     data = [{
         'exam_id': e.exam_id,
