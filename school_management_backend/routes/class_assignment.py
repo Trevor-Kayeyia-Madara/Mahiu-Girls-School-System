@@ -6,7 +6,7 @@ from utils.auth_utils import token_required
 assignment_bp = Blueprint('class_assignment', __name__)
 
 # 📄 Get all subject-teacher assignments for a class
-@assignment_bp.route('/class/<int:class_id>', methods=['GET'])
+@assignment_bp.route('/class/<int:class_id>', methods=['GET', 'OPTIONS'])
 @token_required
 def get_assignments(current_user, class_id):
     if current_user.role != 'admin':
@@ -23,7 +23,7 @@ def get_assignments(current_user, class_id):
     return jsonify(result), 200
 
 # 🆕 Assign or update teacher for subject in class
-@assignment_bp.route('/', methods=['POST'])
+@assignment_bp.route('/', methods=['POST','OPTIONS'])
 @token_required
 def assign_teacher_to_subject(current_user):
     if current_user.role != 'admin':
@@ -50,7 +50,7 @@ def assign_teacher_to_subject(current_user):
     return jsonify({'message': 'Assignment saved'}), 200
 
 # ❌ Delete assignment
-@assignment_bp.route('/class/<int:class_id>/subject/<int:subject_id>', methods=['DELETE'])
+@assignment_bp.route('/class/<int:class_id>/subject/<int:subject_id>', methods=['DELETE','OPTIONS'])
 @token_required
 def delete_assignment(current_user, class_id, subject_id):
     if current_user.role != 'admin':
@@ -65,7 +65,7 @@ def delete_assignment(current_user, class_id, subject_id):
     return jsonify({'message': 'Assignment removed'}), 200
 
 # 📚 Get all class-subject assignments for the current teacher
-@assignment_bp.route('/me', methods=['GET'])
+@assignment_bp.route('/me', methods=['GET', 'OPTIONS'])
 @token_required
 def get_my_class_subjects(current_user):
     if current_user.role != 'teacher':
@@ -86,3 +86,27 @@ def get_my_class_subjects(current_user):
 
     return jsonify(result), 200
 
+@assignment_bp.route('/', methods=['GET'])
+@token_required
+def get_all_class_assignments(current_user):
+    if current_user.role != 'teacher':
+        return jsonify({'error': 'Unauthorized'}), 403
+
+    assignments = ClassAssignment.query \
+        .filter_by(teacher_id=current_user.teacher_id) \
+        .join(Subject) \
+        .join(Classroom) \
+        .all()
+
+    result = [{
+        'id': a.id,
+        'subject': {'name': a.subject.name},
+        'classroom': {'class_name': a.classroom.name},
+        'students': [{
+            'student_id': s.id,
+            'first_name': s.user.first_name,
+            'last_name': s.user.last_name
+        } for s in a.classroom.students]
+    } for a in assignments]
+
+    return jsonify(result), 200

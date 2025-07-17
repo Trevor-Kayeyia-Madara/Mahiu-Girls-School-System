@@ -19,9 +19,9 @@ def create_app():
 
     # ✅ Allow only frontend origin and support credentials (e.g., headers)
     CORS(app,
-     resources={r"/api/*": {"origins": "http://localhost:5173"}},
+     resources={r"/api/*": {"origins": ["http://localhost:5173"]}},
      supports_credentials=True,
-     expose_headers="Authorization",
+     expose_headers=["Authorization"],
      allow_headers=["Content-Type", "Authorization"],
      methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])
 

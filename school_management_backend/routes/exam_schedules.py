@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify
+from flask import Blueprint, jsonify, request
 from utils.auth_utils import token_required
 from models import db, ExamSchedule, ClassAssignment, Exam, Classroom, Subject, Student
 
@@ -45,3 +45,32 @@ def get_exam_schedules(current_user):
         })
 
     return jsonify(result), 200
+
+@exam_schedules_bp.route('/', methods=['POST'])
+@token_required
+def create_exam_schedule(current_user):
+    data = request.get_json()
+
+    exam_id = data.get('exam_id')
+    class_assignment_id = data.get('class_assignment_id')
+
+    if not exam_id or not class_assignment_id:
+        return jsonify({"error": "Both exam_id and class_assignment_id are required."}), 400
+
+    # Check for duplicates
+    existing = ExamSchedule.query.filter_by(
+        exam_id=exam_id,
+        class_assignment_id=class_assignment_id
+    ).first()
+
+    if existing:
+        return jsonify({"error": "This exam schedule already exists."}), 409
+
+    new_schedule = ExamSchedule(
+        exam_id=exam_id,
+        class_assignment_id=class_assignment_id
+    )
+    db.session.add(new_schedule)
+    db.session.commit()
+
+    return jsonify({"message": "Exam schedule created successfully."}), 201

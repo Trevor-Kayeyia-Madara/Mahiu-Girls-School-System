@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react'
+/* eslint-disable react-hooks/exhaustive-deps */
+import { useEffect, useState } from 'react'
 import axios from 'axios'
 
 interface Exam {
@@ -6,12 +7,6 @@ interface Exam {
   name: string
   term: string
   year: number
-}
-
-interface Student {
-  student_id: number
-  first_name: string
-  last_name: string
 }
 
 interface Subject {
@@ -22,10 +17,17 @@ interface Classroom {
   class_name: string
 }
 
+interface Student {
+  student_id: number
+  first_name: string
+  last_name: string
+}
+
 interface ClassAssignment {
+  id: number
   subject: Subject
   classroom: Classroom
-  students: Student[]
+  students?: Student[]
 }
 
 interface ExamSchedule {
@@ -36,24 +38,42 @@ interface ExamSchedule {
 
 const API = 'http://localhost:5001/api/v1'
 
-export default function ExamsPage() {
+export default function ExamSchedulesPage() {
   const [exams, setExams] = useState<Exam[]>([])
+  const [assignments, setAssignments] = useState<ClassAssignment[]>([])
   const [schedules, setSchedules] = useState<ExamSchedule[]>([])
   const [selectedSchedule, setSelectedSchedule] = useState<ExamSchedule | null>(null)
   const [marks, setMarks] = useState<Record<number, number>>({})
-  const [loading, setLoading] = useState(false)
+  const [selectedExamId, setSelectedExamId] = useState<number | null>(null)
+  const [selectedAssignmentId, setSelectedAssignmentId] = useState<number | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
+  useEffect(() => {
+    fetchAll()
+  }, [])
+
+  const fetchAll = async () => {
+    await Promise.all([fetchExams(), fetchAssignments(), fetchSchedules()])
+  }
+
   const fetchExams = async () => {
-    setLoading(true)
     try {
       const { data } = await axios.get(`${API}/exams/`)
       setExams(data)
-    } catch (err) {
-      console.error('Error fetching exams', err)
+    } catch {
       alert('❌ Could not fetch exams.')
-    } finally {
-      setLoading(false)
+    }
+  }
+
+  const fetchAssignments = async () => {
+    try {
+      const token = localStorage.getItem('token')
+      const { data } = await axios.get(`${API}/class-assignments`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      setAssignments(data)
+    } catch {
+      alert('❌ Could not fetch class assignments.')
     }
   }
 
@@ -64,60 +84,32 @@ export default function ExamsPage() {
         headers: { Authorization: `Bearer ${token}` }
       })
       setSchedules(data)
-    } catch (err) {
-      console.error('Error loading schedules', err)
-      alert('❌ Failed to load exam schedules')
+    } catch {
+      alert('❌ Could not fetch exam schedules.')
     }
   }
 
-  useEffect(() => {
-    fetchSchedules()
-  }, [])
-
-  const handleCreate = async () => {
+  const handleCreateSchedule = async () => {
     const token = localStorage.getItem('token')
-    if (!token) return alert('❌ Not logged in')
-
-    const name = prompt('Exam name (e.g. Midterm)')?.trim()
-    const term = prompt('Term (e.g. Term 2)')?.trim()
-    const year = prompt('Year (e.g. 2025)')?.trim()
-
-    if (!name || !term || !year) {
-      alert('❌ All fields are required.')
-      return
-    }
+    if (!token || !selectedExamId || !selectedAssignmentId)
+      return alert('❌ Select both an exam and a class assignment.')
 
     try {
-      await axios.post(`${API}/exams/`, {
-        name,
-        term,
-        year: parseInt(year),
+      await axios.post(`${API}/exam-schedules`, {
+        exam_id: selectedExamId,
+        class_assignment_id: selectedAssignmentId
       }, {
         headers: { Authorization: `Bearer ${token}` }
       })
-
-      alert('✅ Exam created')
-      fetchExams()
-    } catch (err) {
-      console.error('Create exam failed', err)
-      alert('❌ Failed to create exam.')
-    }
-  }
-
-  const handleDelete = async (examId: number) => {
-    const token = localStorage.getItem('token')
-    if (!token) return alert('❌ Not logged in')
-
-    if (!window.confirm('Delete this exam?')) return
-
-    try {
-      await axios.delete(`${API}/exams/${examId}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-      fetchExams()
-    } catch (err) {
-      console.error('Delete failed', err)
-      alert('❌ Could not delete exam.')
+      alert('✅ Schedule created')
+      fetchSchedules()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (err: any) {
+      if (err.response?.status === 409) {
+        alert('❌ Schedule already exists.')
+      } else {
+        alert('❌ Failed to create schedule.')
+      }
     }
   }
 
@@ -129,14 +121,13 @@ export default function ExamsPage() {
   }
 
   const submitGrades = async () => {
-    if (!selectedSchedule) return alert('❌ Select a schedule first')
+    if (!selectedSchedule) return alert('❌ No schedule selected.')
     const token = localStorage.getItem('token')
 
     const entries = Object.entries(marks).map(([id, score]) => ({
       student_id: parseInt(id),
       marks: score
     }))
-
     if (!entries.length) return alert('❌ No marks entered.')
 
     setSubmitting(true)
@@ -150,8 +141,7 @@ export default function ExamsPage() {
       alert('✅ Marks submitted')
       setMarks({})
       setSelectedSchedule(null)
-    } catch (err) {
-      console.error('Submit failed', err)
+    } catch {
       alert('❌ Could not submit grades')
     } finally {
       setSubmitting(false)
@@ -160,74 +150,65 @@ export default function ExamsPage() {
 
   return (
     <div className="p-6 max-w-4xl mx-auto text-gray-800">
-      <h1 className="text-2xl font-bold mb-6">📝 Exam Management</h1>
+      <h1 className="text-2xl font-bold mb-6">📚 Exam Schedules & Marks</h1>
 
-      <div className="flex gap-4 mb-6">
+      {/* Create Schedule */}
+      <div className="mb-6 p-4 bg-gray-50 border rounded">
+        <h2 className="text-lg font-semibold mb-3">➕ Create Exam Schedule</h2>
+
+        <div className="mb-3">
+          <label className="block mb-1 font-medium">Select Exam:</label>
+          <select
+            className="w-full p-2 border rounded"
+            value={selectedExamId ?? ''}
+            onChange={e => setSelectedExamId(parseInt(e.target.value))}
+          >
+            <option value="">-- Select Exam --</option>
+            {exams.map(e => (
+              <option key={e.exam_id} value={e.exam_id}>
+                {`${e.name} (${e.term} ${e.year})`}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="mb-3">
+          <label className="block mb-1 font-medium">Select Class Assignment:</label>
+          <select
+            className="w-full p-2 border rounded"
+            value={selectedAssignmentId ?? ''}
+            onChange={e => setSelectedAssignmentId(parseInt(e.target.value))}
+          >
+            <option value="">-- Select Class Assignment --</option>
+            {assignments.map(a => (
+              <option key={a.id} value={a.id}>
+                {`${a.classroom.class_name} - ${a.subject.name}`}
+              </option>
+            ))}
+          </select>
+        </div>
+
         <button
-          onClick={fetchExams}
+          onClick={handleCreateSchedule}
           className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow"
         >
-          📥 Load Exams
-        </button>
-        <button
-          onClick={handleCreate}
-          className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow"
-        >
-          ➕ Create Exam
+          ➕ Create Schedule
         </button>
       </div>
 
-      {loading && <p className="text-gray-600">Loading exams...</p>}
-
-      {exams.length > 0 ? (
-        <table className="w-full table-auto bg-white shadow rounded overflow-hidden">
-          <thead className="bg-gray-100 text-left">
-            <tr>
-              <th className="p-3">#</th>
-              <th className="p-3">Name</th>
-              <th className="p-3">Term</th>
-              <th className="p-3">Year</th>
-              <th className="p-3">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {exams.map((e, i) => (
-              <tr key={e.exam_id} className="border-t hover:bg-gray-50">
-                <td className="p-3">{i + 1}</td>
-                <td className="p-3">{e.name}</td>
-                <td className="p-3">{e.term}</td>
-                <td className="p-3">{e.year}</td>
-                <td className="p-3">
-                  <button
-                    onClick={() => handleDelete(e.exam_id)}
-                    className="text-red-600 hover:underline text-sm"
-                  >
-                    Delete
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      ) : !loading && (
-        <p className="text-gray-600">No exams found.</p>
-      )}
-
-      <hr className="my-8" />
-      <h2 className="text-xl font-semibold mb-2">📊 Enter Marks</h2>
-
+      {/* Select Schedule for Marks */}
       <div className="mb-4">
-        <label className="block mb-1 font-medium">Select Exam Schedule:</label>
+        <label className="block mb-1 font-medium">Select Schedule to Enter Marks:</label>
         <select
           className="w-full p-2 border rounded"
-          value={selectedSchedule?.id || ''}
-          onChange={(e) => {
+          value={selectedSchedule?.id ?? ''}
+          onChange={e => {
             const id = parseInt(e.target.value)
             const found = schedules.find(s => s.id === id)
             setSelectedSchedule(found || null)
           }}
         >
-          <option value="">-- Select --</option>
+          <option value="">-- Select Schedule --</option>
           {schedules.map(s => (
             <option key={s.id} value={s.id}>
               {`${s.exam.name} - ${s.class_assignment.classroom.class_name} (${s.class_assignment.subject.name})`}
@@ -236,9 +217,10 @@ export default function ExamsPage() {
         </select>
       </div>
 
-      {selectedSchedule && (
+      {/* Enter Marks */}
+      {selectedSchedule?.class_assignment.students && (
         <>
-          <table className="w-full table-auto bg-white shadow rounded mb-4">
+          <table className="w-full bg-white shadow rounded mb-4">
             <thead className="bg-gray-100">
               <tr>
                 <th className="p-2">Student</th>
@@ -254,7 +236,7 @@ export default function ExamsPage() {
                       type="number"
                       className="w-full border px-2 py-1 rounded"
                       value={marks[student.student_id] || ''}
-                      onChange={(e) => handleMarkChange(student.student_id, e.target.value)}
+                      onChange={e => handleMarkChange(student.student_id, e.target.value)}
                     />
                   </td>
                 </tr>
