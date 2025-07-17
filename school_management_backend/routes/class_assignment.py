@@ -72,7 +72,7 @@ def get_my_class_subjects(current_user):
         return jsonify({'error': 'Unauthorized'}), 403
 
     assignments = ClassAssignment.query \
-        .filter_by(teacher_id=current_user.teacher.teacher_id) \
+        .filter_by(teacher_id=current_user.teacher_id) \
         .join(Subject) \
         .join(Classroom) \
         .all()
@@ -85,3 +85,4 @@ def get_my_class_subjects(current_user):
     } for a in assignments]
 
     return jsonify(result), 200
+

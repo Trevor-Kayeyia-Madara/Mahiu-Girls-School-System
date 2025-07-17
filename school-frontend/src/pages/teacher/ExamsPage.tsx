@@ -15,11 +15,19 @@ const API = 'http://localhost:5001/api/v1'
 export default function ExamsPage() {
   const [exams, setExams] = useState<Exam[]>([])
   const [loading, setLoading] = useState(false)
+   const token = localStorage.getItem('token');
+
+  const config = {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  };
+
 
   const fetchExams = async () => {
     setLoading(true)
     try {
-      const { data } = await axios.get(`${API}/exams/`)
+      const { data } = await axios.get(`${API}/exams/`, config)
       setExams(data)
     } catch (err) {
       console.error('Error fetching exams', err)

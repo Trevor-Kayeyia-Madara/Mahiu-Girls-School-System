@@ -32,7 +32,10 @@ def token_required(f):
                 return jsonify({'error': 'User not found'}), 401
 
             if user.role == 'teacher':
-                user.teacher = Teacher.query.filter_by(user_id=user.user_id).first()
+                teacher = Teacher.query.filter_by(user_id=user.user_id).first()
+                if not teacher:
+                    return jsonify({'error': 'Teacher profile not found'}), 401
+                user.teacher_id = teacher.teacher_id  # 👈 FIX: attach teacher_id directly
             elif user.role == 'parent':
                 user.parent = Parent.query.filter_by(user_id=user.user_id).first()
 

@@ -1,15 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useState, useEffect } from 'react'
 import axios from 'axios'
 
-interface Assignment {
-  class_id: number
-  class_name: string
-  subject_id: number
-  subject_name: string
-}
-
-interface ExamSchedule {
-  exam_schedule_id: number
+interface Exam {
+  exam_id: number
   name: string
   term: string
   year: number
@@ -21,175 +14,260 @@ interface Student {
   last_name: string
 }
 
-const API = 'http://localhost:5001/api/v1'
-const token = localStorage.getItem('token')
-const headers = { Authorization: `Bearer ${token}` }
-
-function getKCSEGrade(score: number) {
-  if (score >= 80) return 'A'
-  if (score >= 75) return 'A-'
-  if (score >= 70) return 'B+'
-  if (score >= 65) return 'B'
-  if (score >= 60) return 'B-'
-  if (score >= 55) return 'C+'
-  if (score >= 50) return 'C'
-  if (score >= 45) return 'C-'
-  if (score >= 40) return 'D+'
-  if (score >= 35) return 'D'
-  if (score >= 30) return 'D-'
-  return 'E'
+interface Subject {
+  name: string
 }
 
-export default function TeacherExamEntry() {
-  const [assignments, setAssignments] = useState<Assignment[]>([])
-  const [selectedAssignment, setSelectedAssignment] = useState<Assignment | null>(null)
-  const [examSchedules, setExamSchedules] = useState<ExamSchedule[]>([])
-  const [selectedExamScheduleId, setSelectedExamScheduleId] = useState<number | null>(null)
-  const [students, setStudents] = useState<Student[]>([])
-  const [grades, setGrades] = useState<{ [studentId: number]: number | '' }>({})
+interface Classroom {
+  class_name: string
+}
 
-  // Fetch teacher's assignments
-  useEffect(() => {
-    axios.get(`${API}/assignments/me`, { headers })
-      .then(res => setAssignments(res.data))
-      .catch(err => console.error('Failed to fetch assignments', err))
-  }, [])
+interface ClassAssignment {
+  subject: Subject
+  classroom: Classroom
+  students: Student[]
+}
 
-  const handleAssignmentChange = (subjectId: number) => {
-    const assignment = assignments.find(a => a.subject_id === subjectId)
-    setSelectedAssignment(assignment ?? null)
-    setSelectedExamScheduleId(null)
-    setExamSchedules([])
-    setStudents([])
-    setGrades({})
+interface ExamSchedule {
+  id: number
+  exam: Exam
+  class_assignment: ClassAssignment
+}
 
-    if (assignment) {
-      axios.get(`${API}/exams/class/${assignment.class_id}/subject/${assignment.subject_id}`, { headers })
-        .then(res => setExamSchedules(res.data))
-        .catch(err => console.error('Failed to fetch exam schedules', err))
+const API = 'http://localhost:5001/api/v1'
 
-      axios.get(`${API}/students/class/${assignment.class_id}`, { headers })
-        .then(res => {
-          const initialGrades: { [id: number]: number | '' } = {}
-          res.data.forEach((s: Student) => { initialGrades[s.student_id] = '' })
-          setStudents(res.data)
-          setGrades(initialGrades)
-        })
-        .catch(err => console.error('Failed to fetch students', err))
+export default function ExamsPage() {
+  const [exams, setExams] = useState<Exam[]>([])
+  const [schedules, setSchedules] = useState<ExamSchedule[]>([])
+  const [selectedSchedule, setSelectedSchedule] = useState<ExamSchedule | null>(null)
+  const [marks, setMarks] = useState<Record<number, number>>({})
+  const [loading, setLoading] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+
+  const fetchExams = async () => {
+    setLoading(true)
+    try {
+      const { data } = await axios.get(`${API}/exams/`)
+      setExams(data)
+    } catch (err) {
+      console.error('Error fetching exams', err)
+      alert('❌ Could not fetch exams.')
+    } finally {
+      setLoading(false)
     }
   }
 
-  const handleGradeChange = (studentId: number, score: string) => {
-    const value = parseFloat(score)
-    setGrades(prev => ({
+  const fetchSchedules = async () => {
+    try {
+      const token = localStorage.getItem('token')
+      const { data } = await axios.get(`${API}/exam-schedules`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      setSchedules(data)
+    } catch (err) {
+      console.error('Error loading schedules', err)
+      alert('❌ Failed to load exam schedules')
+    }
+  }
+
+  useEffect(() => {
+    fetchSchedules()
+  }, [])
+
+  const handleCreate = async () => {
+    const token = localStorage.getItem('token')
+    if (!token) return alert('❌ Not logged in')
+
+    const name = prompt('Exam name (e.g. Midterm)')?.trim()
+    const term = prompt('Term (e.g. Term 2)')?.trim()
+    const year = prompt('Year (e.g. 2025)')?.trim()
+
+    if (!name || !term || !year) {
+      alert('❌ All fields are required.')
+      return
+    }
+
+    try {
+      await axios.post(`${API}/exams/`, {
+        name,
+        term,
+        year: parseInt(year),
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+
+      alert('✅ Exam created')
+      fetchExams()
+    } catch (err) {
+      console.error('Create exam failed', err)
+      alert('❌ Failed to create exam.')
+    }
+  }
+
+  const handleDelete = async (examId: number) => {
+    const token = localStorage.getItem('token')
+    if (!token) return alert('❌ Not logged in')
+
+    if (!window.confirm('Delete this exam?')) return
+
+    try {
+      await axios.delete(`${API}/exams/${examId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      fetchExams()
+    } catch (err) {
+      console.error('Delete failed', err)
+      alert('❌ Could not delete exam.')
+    }
+  }
+
+  const handleMarkChange = (studentId: number, value: string) => {
+    setMarks(prev => ({
       ...prev,
-      [studentId]: isNaN(value) ? '' : Math.min(Math.max(value, 0), 100)
+      [studentId]: parseFloat(value) || 0
     }))
   }
 
-  const handleSubmit = async () => {
-    if (!selectedExamScheduleId) {
-      return alert('Please select an exam.')
-    }
+  const submitGrades = async () => {
+    if (!selectedSchedule) return alert('❌ Select a schedule first')
+    const token = localStorage.getItem('token')
 
-    const payload = {
-      exam_schedule_id: selectedExamScheduleId,
-      grades: Object.entries(grades)
-        .filter(([, score]) => score !== '')
-        .map(([student_id, score]) => ({
-          student_id: Number(student_id),
-          marks: score
-        }))
-    }
+    const entries = Object.entries(marks).map(([id, score]) => ({
+      student_id: parseInt(id),
+      marks: score
+    }))
 
-    if (!payload.grades.length) return alert('No grades entered.')
+    if (!entries.length) return alert('❌ No marks entered.')
 
+    setSubmitting(true)
     try {
-      await axios.post(`${API}/grades`, payload, { headers })
-      alert('✅ Grades submitted successfully.')
+      await axios.post(`${API}/grades`, {
+        exam_schedule_id: selectedSchedule.id,
+        grades: entries
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      alert('✅ Marks submitted')
+      setMarks({})
+      setSelectedSchedule(null)
     } catch (err) {
-      console.error('Error submitting grades:', err)
-      alert('❌ Failed to submit grades.')
+      console.error('Submit failed', err)
+      alert('❌ Could not submit grades')
+    } finally {
+      setSubmitting(false)
     }
   }
 
   return (
-    <div className="p-6">
-      <h1 className="text-xl font-bold mb-4">📊 Enter Exam Grades</h1>
+    <div className="p-6 max-w-4xl mx-auto text-gray-800">
+      <h1 className="text-2xl font-bold mb-6">📝 Exam Management</h1>
+
+      <div className="flex gap-4 mb-6">
+        <button
+          onClick={fetchExams}
+          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow"
+        >
+          📥 Load Exams
+        </button>
+        <button
+          onClick={handleCreate}
+          className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow"
+        >
+          ➕ Create Exam
+        </button>
+      </div>
+
+      {loading && <p className="text-gray-600">Loading exams...</p>}
+
+      {exams.length > 0 ? (
+        <table className="w-full table-auto bg-white shadow rounded overflow-hidden">
+          <thead className="bg-gray-100 text-left">
+            <tr>
+              <th className="p-3">#</th>
+              <th className="p-3">Name</th>
+              <th className="p-3">Term</th>
+              <th className="p-3">Year</th>
+              <th className="p-3">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {exams.map((e, i) => (
+              <tr key={e.exam_id} className="border-t hover:bg-gray-50">
+                <td className="p-3">{i + 1}</td>
+                <td className="p-3">{e.name}</td>
+                <td className="p-3">{e.term}</td>
+                <td className="p-3">{e.year}</td>
+                <td className="p-3">
+                  <button
+                    onClick={() => handleDelete(e.exam_id)}
+                    className="text-red-600 hover:underline text-sm"
+                  >
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      ) : !loading && (
+        <p className="text-gray-600">No exams found.</p>
+      )}
+
+      <hr className="my-8" />
+      <h2 className="text-xl font-semibold mb-2">📊 Enter Marks</h2>
 
       <div className="mb-4">
-        <label className="font-medium">Select Subject</label>
+        <label className="block mb-1 font-medium">Select Exam Schedule:</label>
         <select
-          className="w-full p-2 border rounded mt-1"
-          value={selectedAssignment?.subject_id ?? ''}
-          onChange={e => handleAssignmentChange(Number(e.target.value))}
+          className="w-full p-2 border rounded"
+          value={selectedSchedule?.id || ''}
+          onChange={(e) => {
+            const id = parseInt(e.target.value)
+            const found = schedules.find(s => s.id === id)
+            setSelectedSchedule(found || null)
+          }}
         >
-          <option value="">-- Choose --</option>
-          {assignments.map((a, index) => (
-            <option key={index} value={a.subject_id}>
-              {a.class_name} - {a.subject_name}
+          <option value="">-- Select --</option>
+          {schedules.map(s => (
+            <option key={s.id} value={s.id}>
+              {`${s.exam.name} - ${s.class_assignment.classroom.class_name} (${s.class_assignment.subject.name})`}
             </option>
           ))}
         </select>
       </div>
 
-      {selectedAssignment && (
-        <div className="mb-4">
-          <label className="font-medium">Select Exam</label>
-          <select
-            className="w-full p-2 border rounded mt-1"
-            value={selectedExamScheduleId ?? ''}
-            onChange={e => setSelectedExamScheduleId(Number(e.target.value))}
-          >
-            <option value="">-- Choose --</option>
-            {examSchedules.map(e => (
-              <option key={e.exam_schedule_id} value={e.exam_schedule_id}>
-                {e.name} ({e.term} {e.year})
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
-
-      {students.length > 0 && (
+      {selectedSchedule && (
         <>
-          <table className="w-full bg-white rounded shadow table-auto">
+          <table className="w-full table-auto bg-white shadow rounded mb-4">
             <thead className="bg-gray-100">
               <tr>
-                <th className="p-2 text-left">#</th>
-                <th className="p-2 text-left">Student</th>
-                <th className="p-2 text-left">Score</th>
-                <th className="p-2 text-left">Grade</th>
+                <th className="p-2">Student</th>
+                <th className="p-2">Marks</th>
               </tr>
             </thead>
             <tbody>
-              {students.map((s, i) => {
-                const score = grades[s.student_id]
-                const gradeLabel = typeof score === 'number' ? getKCSEGrade(score) : ''
-                return (
-                  <tr key={s.student_id} className="border-t">
-                    <td className="p-2">{i + 1}</td>
-                    <td className="p-2">{s.first_name} {s.last_name}</td>
-                    <td className="p-2">
-                      <input
-                        type="number"
-                        className="border p-1 rounded w-24"
-                        value={score}
-                        onChange={(e) => handleGradeChange(s.student_id, e.target.value)}
-                      />
-                    </td>
-                    <td className="p-2">{gradeLabel}</td>
-                  </tr>
-                )
-              })}
+              {selectedSchedule.class_assignment.students.map(student => (
+                <tr key={student.student_id}>
+                  <td className="p-2">{student.first_name} {student.last_name}</td>
+                  <td className="p-2">
+                    <input
+                      type="number"
+                      className="w-full border px-2 py-1 rounded"
+                      value={marks[student.student_id] || ''}
+                      onChange={(e) => handleMarkChange(student.student_id, e.target.value)}
+                    />
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
 
           <button
-            onClick={handleSubmit}
-            className="mt-4 bg-blue-600 text-white px-4 py-2 rounded"
+            onClick={submitGrades}
+            disabled={submitting}
+            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow"
           >
-            💾 Submit Grades
+            {submitting ? 'Submitting...' : '✅ Submit Marks'}
           </button>
         </>
       )}
