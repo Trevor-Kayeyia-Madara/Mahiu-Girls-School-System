@@ -6,3 +6,4 @@ class Grade(db.Model):
     exam_schedule_id = db.Column(db.Integer, nullable=False)
     marks = db.Column(db.Float, nullable=False)
     student_id = db.Column(db.Integer, db.ForeignKey('students.student_id'), nullable=False)
+    subject_id = db.Column(db.Integer, db.ForeignKey('subjects.subject_id'), nullable=False)
