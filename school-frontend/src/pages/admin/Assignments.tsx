@@ -2,10 +2,6 @@
 import { useEffect, useState } from 'react'
 import axios from 'axios'
 
-interface Teacher {
-  teacher_id: number
-  name: string
-}
 
 interface Subject {
   subject_id: number
@@ -21,16 +17,21 @@ interface Assignment {
   [subject_id: number]: number | null
 }
 
+interface TeacherSubject {
+  teacher_id: number
+  teacher_name: string
+  subject_id: number
+  subject_name: string
+}
+
 export default function AdminAssignments() {
   const [classrooms, setClassrooms] = useState<Classroom[]>([])
-  const [teachers, setTeachers] = useState<Teacher[]>([])
+  const [subjectsList, setSubjectsList] = useState<Subject[]>([])
   const [assignments, setAssignments] = useState<{ [class_id: number]: Assignment }>({})
+  const [teacherSubjects, setTeacherSubjects] = useState<TeacherSubject[]>([])
   const [message, setMessage] = useState('')
   const [filter, setFilter] = useState<number | 'all'>('all')
   const [loading, setLoading] = useState(true)
-  const [subjectsList, setSubjectsList] = useState<Subject[]>([])
-
-  // Pagination state
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 4
 
@@ -38,36 +39,35 @@ export default function AdminAssignments() {
     const fetchData = async () => {
       const token = localStorage.getItem('token')
       try {
-        const [classRes, subjectRes, teacherRes] = await Promise.all([
-          axios.get('http://localhost:5001/api/v1/classrooms', { headers: { Authorization: `Bearer ${token}` } }),
-          axios.get('http://localhost:5001/api/v1/subjects', { headers: { Authorization: `Bearer ${token}` } }),
-          axios.get('http://localhost:5001/api/v1/teachers', { headers: { Authorization: `Bearer ${token}` } })
+        const [classRes, subjectRes, teacherSubjRes] = await Promise.all([
+          axios.get('http://localhost:5001/api/v1/classrooms', {
+            headers: { Authorization: `Bearer ${token}` }
+          }),
+          axios.get('http://localhost:5001/api/v1/subjects', {
+            headers: { Authorization: `Bearer ${token}` }
+          }),
+          axios.get('http://localhost:5001/api/v1/teacher-subjects', {
+            headers: { Authorization: `Bearer ${token}` }
+          })
         ])
 
-        const classroomData = Array.isArray(classRes.data)
-          ? classRes.data
-          : classRes.data?.data ?? []
-
+        const classroomData = Array.isArray(classRes.data) ? classRes.data : classRes.data?.data ?? []
         setClassrooms(classroomData)
         setSubjectsList(subjectRes.data || [])
-        setTeachers(teacherRes.data || [])
+        setTeacherSubjects(teacherSubjRes.data || [])
 
         const assignmentsMap: { [class_id: number]: Assignment } = {}
 
         for (const classroom of classroomData) {
-          try {
-            const res = await axios.get(
-              `http://localhost:5001/api/v1/assignments/class/${classroom.class_id}`,
-              { headers: { Authorization: `Bearer ${token}` } }
-            )
-            const subjectAssignments: Assignment = {}
-            for (const item of res.data) {
-              subjectAssignments[item.subject_id] = item.teacher_id
-            }
-            assignmentsMap[classroom.class_id] = subjectAssignments
-          } catch (err) {
-            console.error(`Failed to load assignments for class ${classroom.class_id}`, err)
+          const res = await axios.get(
+            `http://localhost:5001/api/v1/assignments/class/${classroom.class_id}`,
+            { headers: { Authorization: `Bearer ${token}` } }
+          )
+          const subjectAssignments: Assignment = {}
+          for (const item of res.data) {
+            subjectAssignments[item.subject_id] = item.teacher_id
           }
+          assignmentsMap[classroom.class_id] = subjectAssignments
         }
 
         setAssignments(assignmentsMap)
@@ -140,7 +140,18 @@ export default function AdminAssignments() {
     }
   }
 
-  // Filter and paginate
+  const getEligibleTeachers = (subject_id: number) => {
+    const eligible = teacherSubjects
+      .filter((ts) => ts.subject_id === subject_id)
+      .map((ts) => ({
+        teacher_id: ts.teacher_id,
+        name: ts.teacher_name
+      }))
+
+    const unique = Array.from(new Map(eligible.map(t => [t.teacher_id, t])).values())
+    return unique
+  }
+
   const filteredClassrooms =
     filter === 'all' ? classrooms : classrooms.filter((c) => c.class_id === filter)
 
@@ -156,7 +167,6 @@ export default function AdminAssignments() {
 
       {message && <p className="mb-4 text-green-600 font-medium">{message}</p>}
 
-      {/* Filter */}
       <div className="mb-4">
         <label className="mr-2 font-semibold">Filter by Class:</label>
         <select
@@ -207,7 +217,7 @@ export default function AdminAssignments() {
                         className="border rounded px-2 py-1 w-full"
                       >
                         <option value="">-- Select Teacher --</option>
-                        {teachers.map((t) => (
+                        {getEligibleTeachers(subj.subject_id).map((t) => (
                           <option key={t.teacher_id} value={t.teacher_id}>
                             {t.name}
                           </option>
@@ -239,7 +249,6 @@ export default function AdminAssignments() {
         <p className="text-gray-600">No classrooms available to display.</p>
       )}
 
-      {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex justify-center mt-6 space-x-4">
           <button
