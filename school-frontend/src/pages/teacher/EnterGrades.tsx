@@ -1,5 +1,7 @@
-/* eslint-disable react-hooks/exhaustive-deps */
-import { useEffect, useState, useCallback } from 'react'
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// src/pages/teacher/TeacherGrades.tsx
+
+import { useEffect, useState } from 'react'
 import axios from 'axios'
 
 interface Subject {
@@ -9,30 +11,18 @@ interface Subject {
   class_name: string
 }
 
-interface Student {
+interface StudentGradeSummary {
   student_id: number
-  first_name: string
-  last_name: string
-}
-
-interface Exam {
-  exam_id: number
-  name: string
-  term: string
-  year: number
-}
-
-interface GradeView {
   student_name: string
-  score: number
+  average_score: number
+  kcse_grade: string
 }
-
-type ViewMode = 'entry' | 'view'
 
 const API = 'http://localhost:5001/api/v1'
+const token = localStorage.getItem('token')
+const headers = { Authorization: `Bearer ${token}` }
 
-// KCSE grade converter
-const getKCSEGrade = (score: number): string => {
+const getKcseGrade = (score: number) => {
   if (score >= 80) return 'A'
   if (score >= 75) return 'A-'
   if (score >= 70) return 'B+'
@@ -49,222 +39,115 @@ const getKCSEGrade = (score: number): string => {
 
 export default function TeacherGrades() {
   const [subjects, setSubjects] = useState<Subject[]>([])
-  const [selectedSubjectId, setSelectedSubjectId] = useState<number | null>(null)
-  const [students, setStudents] = useState<Student[]>([])
-  const [grades, setGrades] = useState<{ [id: number]: number | '' }>({})
-  const [exams, setExams] = useState<Exam[]>([])
-  const [selectedExamId, setSelectedExamId] = useState<number | null>(null)
-  const [viewMode, setViewMode] = useState<ViewMode>('entry')
-  const [existingGrades, setExistingGrades] = useState<GradeView[]>([])
+  const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null)
+  const [gradeSummaries, setGradeSummaries] = useState<StudentGradeSummary[]>([])
 
-  const token = localStorage.getItem('token')
-  const headers = { Authorization: `Bearer ${token}` }
-
-  const selectedSubject = subjects.find(s => s.subject_id === selectedSubjectId)
-
-  useEffect(() => {
-    axios.get(`${API}/teacher-subjects/me`, { headers })
-      .then(res => setSubjects(Array.isArray(res.data) ? res.data : []))
-      .catch(() => setSubjects([]))
-  }, [])
-
-  const fetchStudents = useCallback(async (classId: number) => {
-    const { data } = await axios.get(`${API}/students/class/${classId}`, { headers })
-    setStudents(data)
-    const initial: { [id: number]: number | '' } = {}
-    data.forEach((s: Student) => (initial[s.student_id] = ''))
-    setGrades(initial)
-  }, [])
-
-  const fetchExams = useCallback(async (classId: number, subjectId: number) => {
-    const { data } = await axios.get(`${API}/exams/class/${classId}/subject/${subjectId}`, { headers })
-    setExams(data)
-    setSelectedExamId(data[0]?.exam_id ?? null)
-  }, [])
-
-  const loadData = async () => {
-    if (!selectedSubject) return
-    await fetchStudents(selectedSubject.class_id)
-    await fetchExams(selectedSubject.class_id, selectedSubject.subject_id)
-  }
-
-  const handleSubmitGrades = async () => {
-    if (!selectedExamId || !selectedSubject) return alert('Select subject and exam first.')
-    const payload = Object.entries(grades).filter(([, v]) => v !== '').map(([id, score]) => ({
-      student_id: parseInt(id),
-      score,
-      class_id: selectedSubject.class_id,
-      subject_id: selectedSubject.subject_id,
-      exam_id: selectedExamId
-    }))
-
+  const fetchSubjects = async () => {
     try {
-      await axios.post(`${API}/grades/bulk`, payload, { headers })
-      alert('✅ Grades submitted successfully')
-    } catch {
-      alert('❌ Failed to submit grades')
+      const { data } = await axios.get(`${API}/teacher-subjects/me`, { headers })
+      setSubjects(data)
+    } catch (err) {
+      console.error('Failed to load subjects', err)
     }
   }
 
-  const handleCreateExam = async () => {
-    if (!selectedSubject) return
-    const name = prompt('Exam name (e.g. CAT 2):')?.trim()
-    const term = prompt('Term (e.g. Term 2):')?.trim()
-    const year = prompt('Year (e.g. 2025):')?.trim()
-    if (!name || !term || !year) return alert('All fields are required.')
+  const fetchGradesSummary = async (classId: number, subjectId: number) => {
+    try {
+      const res = await axios.get(`${API}/grades/class/${classId}/subject/${subjectId}`, { headers })
+      const raw = res.data
 
-    await axios.post(`${API}/exams`, {
-      name, term, year,
-      subject_id: selectedSubject.subject_id,
-      class_id: selectedSubject.class_id
-    }, { headers })
+      const summaries = raw.map((s: any) => ({
+        student_id: s.student_id,
+        student_name: s.student_name,
+        average_score: s.average_score,
+        kcse_grade: getKcseGrade(s.average_score),
+      }))
 
-    fetchExams(selectedSubject.class_id, selectedSubject.subject_id)
+      setGradeSummaries(summaries)
+    } catch (err) {
+      console.error('Failed to load grades summary', err)
+      setGradeSummaries([])
+    }
   }
 
-  const handleViewGrades = async () => {
-    if (!selectedExamId || !selectedSubject) return
-    const { data } = await axios.get(
-      `${API}/grades/class/${selectedSubject.class_id}/subject/${selectedSubject.subject_id}/exam/${selectedExamId}`,
-      { headers }
-    )
-    setExistingGrades(data)
+  useEffect(() => {
+    fetchSubjects()
+  }, [])
+
+  const handleLoad = () => {
+    if (selectedSubject) {
+      fetchGradesSummary(selectedSubject.class_id, selectedSubject.subject_id)
+    }
   }
 
-  const calculateMean = (scores: number[]): number => {
-    const valid = scores.filter((s) => !isNaN(s))
-    if (!valid.length) return 0
-    return parseFloat((valid.reduce((a, b) => a + b, 0) / valid.length).toFixed(2))
-  }
+  const meanScore = gradeSummaries.length
+    ? (
+        gradeSummaries.reduce((acc, g) => acc + g.average_score, 0) /
+        gradeSummaries.length
+      ).toFixed(2)
+    : null
 
   return (
     <div className="p-6">
-      <div className="flex justify-between mb-4">
-        <h1 className="text-xl font-bold">🎯 Grades Portal</h1>
-        <div className="space-x-2">
-          <button onClick={() => setViewMode('entry')} className={`px-3 py-1 rounded ${viewMode === 'entry' ? 'bg-blue-600 text-white' : 'bg-gray-300'}`}>➕ Enter Grades</button>
-          <button onClick={() => { setViewMode('view'); handleViewGrades(); }} className={`px-3 py-1 rounded ${viewMode === 'view' ? 'bg-blue-600 text-white' : 'bg-gray-300'}`}>📄 View Grades</button>
-        </div>
-      </div>
+      <h1 className="text-xl font-bold mb-4">📊 Subject Grades Summary</h1>
 
-      {/* Subject Selector */}
       <div className="mb-4">
-        <label className="block font-medium mb-1">Subject</label>
-        <select value={selectedSubjectId ?? ''} onChange={(e) => setSelectedSubjectId(Number(e.target.value))} className="border p-2 rounded w-full max-w-md">
+        <label className="block font-medium mb-1">Select Subject</label>
+        <select
+          value={selectedSubject?.subject_id ?? ''}
+          onChange={(e) =>
+            setSelectedSubject(
+              subjects.find((s) => s.subject_id === Number(e.target.value)) || null
+            )
+          }
+          className="w-full max-w-md border p-2 rounded"
+        >
           <option value="">-- Choose Subject --</option>
-          {subjects.map(s => (
-            <option key={s.subject_id} value={s.subject_id}>{s.class_name} - {s.name}</option>
+          {subjects.map((s) => (
+            <option key={s.subject_id} value={s.subject_id}>
+              {s.class_name} - {s.name}
+            </option>
           ))}
         </select>
+
         {selectedSubject && (
-          <button onClick={loadData} className="mt-2 bg-indigo-600 text-white px-4 py-1 rounded">📥 Load Students & Exams</button>
+          <button
+            onClick={handleLoad}
+            className="mt-2 px-4 py-1 bg-blue-600 text-white rounded"
+          >
+            📥 Load Summary
+          </button>
         )}
       </div>
 
-      {/* Exam Picker */}
-      {selectedSubject && (
-        <div className="mb-4 flex items-center gap-4">
-          <div className="flex-1">
-            <label className="block font-medium">Exam</label>
-            <select value={selectedExamId ?? ''} onChange={(e) => setSelectedExamId(Number(e.target.value))} className="w-full border p-2 rounded">
-              <option value="">-- Choose Exam --</option>
-              {exams.map((e) => (
-                <option key={e.exam_id} value={e.exam_id}>{e.name} ({e.term} {e.year})</option>
-              ))}
-            </select>
-          </div>
-          <button onClick={handleCreateExam} className="mt-6 bg-green-600 text-white px-4 py-2 rounded">➕ New Exam</button>
-        </div>
-      )}
-
-      {/* Entry Mode Table */}
-      {viewMode === 'entry' && students.length > 0 && (
+      {gradeSummaries.length > 0 && (
         <>
-          <table className="w-full bg-white shadow table-auto rounded">
+          <table className="w-full table-auto bg-white shadow rounded">
             <thead className="bg-gray-100">
               <tr>
                 <th className="p-2 text-left">#</th>
                 <th className="p-2 text-left">Student</th>
-                <th className="p-2 text-left">Score</th>
-                <th className="p-2 text-left">Grade</th>
+                <th className="p-2 text-left">Average Score</th>
+                <th className="p-2 text-left">KCSE Grade</th>
               </tr>
             </thead>
             <tbody>
-              {students.map((s, i) => {
-                const score = grades[s.student_id]
-                const numericScore = typeof score === 'number' ? score : NaN
-                const grade = isNaN(numericScore) ? '-' : getKCSEGrade(numericScore)
-
-                return (
-                  <tr key={s.student_id} className="border-t">
-                    <td className="p-2">{i + 1}</td>
-                    <td className="p-2">{s.first_name} {s.last_name}</td>
-                    <td className="p-2">
-                      <input
-                        type="number"
-                        min={0}
-                        max={100}
-                        className="border p-1 rounded w-24"
-                        value={grades[s.student_id]}
-                        onChange={(e) => setGrades(prev => ({
-                          ...prev,
-                          [s.student_id]: parseFloat(e.target.value) || ''
-                        }))}
-                      />
-                    </td>
-                    <td className="p-2">{grade}</td>
-                  </tr>
-                )
-              })}
-              {/* Summary row */}
-              <tr className="font-bold bg-gray-100">
-                <td colSpan={2} className="p-2 text-right">Class Mean</td>
-                <td className="p-2">
-                  {(() => {
-                    const validScores = Object.values(grades).filter(v => typeof v === 'number') as number[]
-                    const mean = calculateMean(validScores)
-                    return mean || '-'
-                  })()}
-                </td>
-                <td className="p-2">
-                  {(() => {
-                    const validScores = Object.values(grades).filter(v => typeof v === 'number') as number[]
-                    const mean = calculateMean(validScores)
-                    return mean ? getKCSEGrade(mean) : '-'
-                  })()}
-                </td>
-              </tr>
-            </tbody>
-          </table>
-
-          <button onClick={handleSubmitGrades} className="mt-4 bg-blue-600 text-white px-4 py-2 rounded">
-            💾 Submit Grades
-          </button>
-        </>
-      )}
-
-      {/* View Mode */}
-      {viewMode === 'view' && (
-        existingGrades.length > 0 ? (
-          <table className="w-full mt-4 bg-white shadow table-auto rounded">
-            <thead className="bg-gray-100">
-              <tr>
-                <th className="p-2 text-left">Student</th>
-                <th className="p-2 text-left">Score</th>
-                <th className="p-2 text-left">Grade</th>
-              </tr>
-            </thead>
-            <tbody>
-              {existingGrades.map((g, i) => (
-                <tr key={i} className="border-t">
-                  <td className="p-2">{g.student_name}</td>
-                  <td className="p-2">{g.score}</td>
-                  <td className="p-2">{getKCSEGrade(g.score)}</td>
+              {gradeSummaries.map((s, i) => (
+                <tr key={s.student_id} className="border-t">
+                  <td className="p-2">{i + 1}</td>
+                  <td className="p-2">{s.student_name}</td>
+                  <td className="p-2">{s.average_score.toFixed(2)}</td>
+                  <td className="p-2">{s.kcse_grade}</td>
                 </tr>
               ))}
+              <tr className="bg-gray-100 font-bold">
+                <td colSpan={2} className="p-2 text-right">Class Mean:</td>
+                <td className="p-2">{meanScore}</td>
+                <td className="p-2">{getKcseGrade(Number(meanScore))}</td>
+              </tr>
             </tbody>
           </table>
-        ) : <p className="mt-4 text-gray-600">No grades found for this exam.</p>
+        </>
       )}
     </div>
   )

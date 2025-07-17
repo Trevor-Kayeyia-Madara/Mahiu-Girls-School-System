@@ -1,7 +1,8 @@
 from flask import Blueprint, request, jsonify
 from app import db
-from models import Grade, Student, Subject, Teacher
+from models import Grade, Student, Subject, Teacher, Exam
 from utils.auth_utils import token_required
+from utils.grade_utils import get_kcse_grade
 
 grade_bp = Blueprint('grades', __name__)
 
@@ -222,3 +223,35 @@ def bulk_upload_grades(current_user):
 
     db.session.commit()
     return jsonify({'message': 'Grades uploaded successfully'}), 200
+
+@grade_bp.route('/summary/class/<int:class_id>/subject/<int:subject_id>', methods=['GET'])
+@token_required
+def summary_by_class_subject(current_user, class_id, subject_id):
+    if current_user.role not in ['admin', 'teacher']:
+        return jsonify({'error': 'Unauthorized'}), 403
+
+    students = Student.query.filter_by(class_id=class_id).all()
+    data = []
+    for s in students:
+        exams = ['CAT 1', 'CAT 2', 'Main Exam']
+        scores = {}
+        for ex in exams:
+            g = Grade.query.join(Exam).filter(
+                Grade.student_id == s.student_id,
+                Grade.subject_id == subject_id,
+                Exam.name == ex
+            ).first()
+            scores[ex] = g.score if g else 0
+        
+        total = scores['CAT 1'] + scores['CAT 2'] + scores['Main Exam']
+        data.append({
+            'student_id': s.student_id,
+            'student_name': f"{s.first_name} {s.last_name}",
+            'cat1': scores['CAT 1'],
+            'cat2': scores['CAT 2'],
+            'main': scores['Main Exam'],
+            'total': total,
+            'kcse': get_kcse_grade(total)
+        })
+
+    return jsonify(data), 200
