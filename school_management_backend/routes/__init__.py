@@ -13,6 +13,7 @@ from .messages import message_bp
 from .timetable import timetable_bp
 from .subjects import subject_bp
 from .teacher_subject import teacher_subject_bp
+from .exam_schedules import exam_schedules_bp
 
 def init_routes(app):
    app.register_blueprint(auth_bp,url_prefix='/api/v1/auth')
@@ -31,3 +32,4 @@ def init_routes(app):
    app.register_blueprint(timetable_bp, url_prefix='/api/v1/timetable')
    app.register_blueprint(subject_bp, url_prefix='/api/v1/subjects')
    app.register_blueprint(teacher_subject_bp, url_prefix='/api/v1/teacher-subjects')
+   app.register_blueprint(exam_schedules_bp, url_prefix='/api/v1/exam-schedules')
