@@ -1,4 +1,4 @@
-import  { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import axios from 'axios';
 
 const API_BASE = 'http://localhost:5001/api/v1';
@@ -22,14 +22,15 @@ export default function TeacherSubjects() {
 
   const token = localStorage.getItem('token');
 
-const config = {
-  headers: {
-    Authorization: `Bearer ${token}`
-  }
-};
+  const config = {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  };
+
   const fetchSubjects = async () => {
     try {
-      const res = await axios.get<Subject[]>(`${API_BASE}/subjects`, config );
+      const res = await axios.get<Subject[]>(`${API_BASE}/subjects`, config);
       setSubjects(res.data);
     } catch (err) {
       console.error('Error fetching subjects', err);
@@ -38,7 +39,7 @@ const config = {
 
   const fetchAssigned = async () => {
     try {
-      const res = await axios.get<AssignedSubject[]>(`${API_BASE}/teacher-subjects/me`,config );
+      const res = await axios.get<AssignedSubject[]>(`${API_BASE}/teacher-subjects/me`, config);
       setAssignedSubjects(res.data);
     } catch (err) {
       console.error('Error fetching assigned subjects', err);
@@ -71,7 +72,7 @@ const config = {
           axios.post(
             `${API_BASE}/teacher-subjects`,
             { subject_id: subjectId },
-
+            config // ✅ FIXED: Authorization header added
           )
         )
       );
@@ -91,7 +92,7 @@ const config = {
     if (!window.confirm('Are you sure you want to unassign this subject?')) return;
 
     try {
-      await axios.delete(`${API_BASE}/teacher-subjects/${subjectId}`,config );
+      await axios.delete(`${API_BASE}/teacher-subjects/${subjectId}`, config);
       await fetchAssigned();
       setMessage('Subject unassigned successfully.');
     } catch (err) {
@@ -134,7 +135,10 @@ const config = {
         <h3 className="text-lg font-semibold mb-2">Already Assigned:</h3>
         <ul className="space-y-2">
           {assignedSubjects.map((s) => (
-            <li key={s.subject_id} className="flex justify-between items-center bg-gray-100 px-3 py-2 rounded">
+            <li
+              key={s.subject_id}
+              className="flex justify-between items-center bg-gray-100 px-3 py-2 rounded"
+            >
               <span>{s.subject_name}</span>
               <button
                 onClick={() => handleDelete(s.subject_id)}
@@ -148,5 +152,4 @@ const config = {
       </div>
     </div>
   );
-};
-
+}
