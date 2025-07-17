@@ -1,6 +1,7 @@
+from sqlite3 import IntegrityError
 from flask import Blueprint, request, jsonify
 from app import db
-from models import Grade, Student, Subject, Teacher, Exam
+from models import Grade, Student, Subject, Teacher, Exam, ExamSchedule
 from utils.auth_utils import token_required
 from utils.grade_utils import get_kcse_grade
 
@@ -255,3 +256,50 @@ def summary_by_class_subject(current_user, class_id, subject_id):
         })
 
     return jsonify(data), 200
+
+#Enter marks
+@grade_bp.route('/grades', methods=['POST'])
+
+def enter_grades():
+    
+    data = request.get_json()
+
+    exam_schedule_id = data.get('exam_schedule_id')
+    entries = data.get('grades')  # list of { student_id, marks }
+
+    if not exam_schedule_id or not entries:
+        return jsonify({"error": "Missing exam_schedule_id or grades"}), 400
+
+    exam_schedule = ExamSchedule.query.get(exam_schedule_id)
+    if not exam_schedule:
+        return jsonify({"error": "ExamSchedule not found"}), 404
+
+    responses = []
+    for entry in entries:
+        student_id = entry.get('student_id')
+        marks = entry.get('marks')
+
+        if student_id is None or marks is None:
+            continue
+
+        # Optional: Check if student belongs to that classroom
+        if student_id not in [s.student_id for s in exam_schedule.class_assignment.classroom.students]:
+            continue
+
+        grade = Grade(
+            student_id=student_id,
+            exam_schedule_id=exam_schedule_id,
+            marks=marks
+        )
+        db.session.add(grade)
+        responses.append({"student_id": student_id, "status": "added"})
+
+    try:
+        db.session.commit()
+        return jsonify({"message": "Grades entered successfully", "details": responses}), 201
+    except IntegrityError:
+        db.session.rollback()
+        return jsonify({"error": "Duplicate entry or constraint issue"}), 409
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500

@@ -9,7 +9,7 @@ exam_bp = Blueprint('exams', __name__)
 # 📄 GET all exams
 @exam_bp.route('/', methods=['GET'])
 @token_required
-def get_all_exams(current_user):
+def get_all_exams():
     exams = Exam.query.all()
     data = [{
         'exam_id': e.exam_id,
@@ -63,7 +63,7 @@ def create_exam(current_user):
 @exam_bp.route('/<int:exam_id>', methods=['PUT'])
 @token_required
 def update_exam(current_user, exam_id):
-    if current_user.role != 'admin':
+    if current_user.role != 'teacher':
         return jsonify({'error': 'Unauthorized'}), 403
 
     exam = Exam.query.get_or_404(exam_id)
@@ -80,7 +80,7 @@ def update_exam(current_user, exam_id):
 @exam_bp.route('/<int:exam_id>', methods=['DELETE'])
 @token_required
 def delete_exam(current_user, exam_id):
-    if current_user.role != 'admin':
+    if current_user.role != 'teacher':
         return jsonify({'error': 'Unauthorized'}), 403
 
     exam = Exam.query.get_or_404(exam_id)
