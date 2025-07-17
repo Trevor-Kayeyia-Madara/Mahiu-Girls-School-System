@@ -11,7 +11,7 @@ class Exam(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     # Relationship to grades (if grades still link to this exam)
-    grades = db.relationship('Grade', backref='exam', cascade='all, delete-orphan')
+    
 
     def __repr__(self):
         return f"<Exam {self.name} ({self.term} {self.year})>"
