@@ -1,4 +1,4 @@
-import React, { useEffect, useState, type FormEvent } from 'react';
+import  { useEffect, useState, type FormEvent } from 'react';
 import axios from 'axios';
 
 const API_BASE = 'http://localhost:5001/api/v1';
@@ -10,47 +10,46 @@ interface Subject {
 
 interface AssignedSubject {
   subject_id: number;
-  name: string;
+  subject_name: string;
 }
 
-interface Props {
-  token: string;
-}
-
-const TeacherSubjects: React.FC<Props> = ({ token }) => {
+export default function TeacherSubjects() {
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [selectedSubjects, setSelectedSubjects] = useState<number[]>([]);
   const [assignedSubjects, setAssignedSubjects] = useState<AssignedSubject[]>([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string>('');
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const headers = {
-    Authorization: `Bearer ${token}`,
+  const token = localStorage.getItem('token');
+
+const config = {
+  headers: {
+    Authorization: `Bearer ${token}`
+  }
+};
+  const fetchSubjects = async () => {
+    try {
+      const res = await axios.get<Subject[]>(`${API_BASE}/subjects`, config );
+      setSubjects(res.data);
+    } catch (err) {
+      console.error('Error fetching subjects', err);
+    }
+  };
+
+  const fetchAssigned = async () => {
+    try {
+      const res = await axios.get<AssignedSubject[]>(`${API_BASE}/teacher-subjects/me`,config );
+      setAssignedSubjects(res.data);
+    } catch (err) {
+      console.error('Error fetching assigned subjects', err);
+    }
   };
 
   useEffect(() => {
-    const fetchSubjects = async () => {
-      try {
-        const res = await axios.get<Subject[]>(`${API_BASE}/subjects`, { headers });
-        setSubjects(res.data);
-      } catch (err) {
-        console.error('Error fetching subjects', err);
-      }
-    };
-
-    const fetchAssigned = async () => {
-      try {
-        const res = await axios.get<AssignedSubject[]>(`${API_BASE}/teacher-subjects/me`, { headers });
-        setAssignedSubjects(res.data);
-      } catch (err) {
-        console.error('Error fetching assigned subjects', err);
-      }
-    };
-
     fetchSubjects();
     fetchAssigned();
-  }, [headers, token]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleCheckboxChange = (subjectId: number) => {
     setSelectedSubjects((prev) =>
@@ -72,13 +71,12 @@ const TeacherSubjects: React.FC<Props> = ({ token }) => {
           axios.post(
             `${API_BASE}/teacher-subjects`,
             { subject_id: subjectId },
-            { headers }
+
           )
         )
       );
 
-      const updated = await axios.get<AssignedSubject[]>(`${API_BASE}/teacher-subjects/me`, { headers });
-      setAssignedSubjects(updated.data);
+      await fetchAssigned();
       setSelectedSubjects([]);
       setMessage('Subjects assigned successfully.');
     } catch (err) {
@@ -86,6 +84,19 @@ const TeacherSubjects: React.FC<Props> = ({ token }) => {
       setMessage('Failed to assign subjects.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDelete = async (subjectId: number) => {
+    if (!window.confirm('Are you sure you want to unassign this subject?')) return;
+
+    try {
+      await axios.delete(`${API_BASE}/teacher-subjects/${subjectId}`,config );
+      await fetchAssigned();
+      setMessage('Subject unassigned successfully.');
+    } catch (err) {
+      console.error('Error deleting subject', err);
+      setMessage('Failed to delete subject.');
     }
   };
 
@@ -121,9 +132,17 @@ const TeacherSubjects: React.FC<Props> = ({ token }) => {
 
       <div className="mt-6">
         <h3 className="text-lg font-semibold mb-2">Already Assigned:</h3>
-        <ul className="list-disc pl-6">
+        <ul className="space-y-2">
           {assignedSubjects.map((s) => (
-            <li key={s.subject_id}>{s.name}</li>
+            <li key={s.subject_id} className="flex justify-between items-center bg-gray-100 px-3 py-2 rounded">
+              <span>{s.subject_name}</span>
+              <button
+                onClick={() => handleDelete(s.subject_id)}
+                className="text-red-500 hover:underline text-sm"
+              >
+                Remove
+              </button>
+            </li>
           ))}
         </ul>
       </div>
@@ -131,4 +150,3 @@ const TeacherSubjects: React.FC<Props> = ({ token }) => {
   );
 };
 
-export default TeacherSubjects;

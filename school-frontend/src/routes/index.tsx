@@ -59,7 +59,7 @@ const router = createBrowserRouter([
           {path: 'exam', element: <ExamsPage />},
           {path:'teacher-exam', element: <TeacherExamEntry />},
           {path:'grade-summary', element:<OverallGradesSummary />},
-          {path:'subjects', element: <TeacherSubjects token={''} />}
+          {path:'subjects', element: <TeacherSubjects />}
           // Placeholder: Add more admin children routes here later
         ]
       }

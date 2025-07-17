@@ -8,6 +8,8 @@ class TeacherSubject(db.Model):
     teacher_id = db.Column(db.Integer, db.ForeignKey('teachers.teacher_id'), nullable=False)
     subject_id = db.Column(db.Integer, db.ForeignKey('subjects.subject_id'), nullable=False)
 
+    subject = db.relationship('Subject', backref='teacher_subjects')  # ✅ Add this line
+
     __table_args__ = (
         db.UniqueConstraint('teacher_id', 'subject_id', name='uq_teacher_subject'),
     )

@@ -13,14 +13,16 @@ def token_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
         if request.method == 'OPTIONS':
-            return '', 200  # Handle CORS preflight gracefully
+            return '', 200
 
-        token = None
-        if 'Authorization' in request.headers:
-            token = request.headers['Authorization'].split(" ")[1]
+        auth_header = request.headers.get('Authorization')
+        if not auth_header:
+            return jsonify({'error': 'Authorization header missing'}), 401
 
-        if not token:
-            return jsonify({'error': 'Token missing'}), 401
+        try:
+            token = auth_header.split(" ")[1]
+        except IndexError:
+            return jsonify({'error': 'Token format is invalid'}), 401
 
         try:
             data = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
@@ -29,7 +31,6 @@ def token_required(f):
             if not user:
                 return jsonify({'error': 'User not found'}), 401
 
-            # Attach role-specific object
             if user.role == 'teacher':
                 user.teacher = Teacher.query.filter_by(user_id=user.user_id).first()
             elif user.role == 'parent':
