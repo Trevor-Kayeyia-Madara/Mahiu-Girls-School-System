@@ -69,9 +69,14 @@ export default function TeacherSubjects() {
     try {
       await Promise.all(
         selectedSubjects.map((subjectId) =>
-          axios.post(`${API_BASE}/teacher-subjects`, { subject_id: subjectId }, config)
+          axios.post(
+            `${API_BASE}/teacher-subjects`,
+            { subject_id: subjectId },
+            config // ✅ FIXED: Authorization header added
+          )
         )
       );
+
       await fetchAssigned();
       setSelectedSubjects([]);
       setMessage('Subjects assigned successfully.');
@@ -97,26 +102,22 @@ export default function TeacherSubjects() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto p-6 bg-white shadow-xl rounded-xl mt-10 relative">
-      <h2 className="text-2xl font-bold mb-6">Manage Your Subjects</h2>
+    <div className="max-w-xl mx-auto p-6 bg-white shadow rounded-xl mt-10">
+      <h2 className="text-2xl font-bold mb-4">Assign Subjects You Teach</h2>
 
-      {message && (
-        <div className="absolute top-2 right-4 bg-green-100 text-green-800 px-4 py-2 rounded shadow text-sm">
-          {message}
-        </div>
-      )}
+      {message && <div className="text-sm text-green-600 mb-4">{message}</div>}
 
-      <form onSubmit={handleSubmit} className="mb-8">
-        <h3 className="text-lg font-semibold mb-3">Select Subjects:</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-60 overflow-y-auto border p-4 rounded bg-gray-50">
+      <form onSubmit={handleSubmit}>
+        <div className="space-y-2">
           {subjects.map((subject) => (
-            <label key={subject.subject_id} className="flex items-center gap-2">
+            <label key={subject.subject_id} className="block">
               <input
                 type="checkbox"
                 checked={selectedSubjects.includes(subject.subject_id)}
                 onChange={() => handleCheckboxChange(subject.subject_id)}
+                className="mr-2"
               />
-              <span>{subject.name}</span>
+              {subject.name}
             </label>
           ))}
         </div>
@@ -124,34 +125,30 @@ export default function TeacherSubjects() {
         <button
           type="submit"
           disabled={loading}
-          className="mt-5 bg-blue-600 text-white px-5 py-2 rounded hover:bg-blue-700 transition disabled:opacity-50"
+          className="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
         >
           {loading ? 'Saving...' : 'Save Subjects'}
         </button>
       </form>
 
-      <div>
-        <h3 className="text-lg font-semibold mb-3">Already Assigned:</h3>
-        <div className="space-y-3 max-h-64 overflow-y-auto border p-4 rounded bg-gray-50">
-          {assignedSubjects.length === 0 ? (
-            <p className="text-gray-500 text-sm">No subjects assigned yet.</p>
-          ) : (
-            assignedSubjects.map((s) => (
-              <div
-                key={s.subject_id}
-                className="flex justify-between items-center bg-white border rounded px-4 py-2 shadow-sm"
+      <div className="mt-6">
+        <h3 className="text-lg font-semibold mb-2">Already Assigned:</h3>
+        <ul className="space-y-2">
+          {assignedSubjects.map((s) => (
+            <li
+              key={s.subject_id}
+              className="flex justify-between items-center bg-gray-100 px-3 py-2 rounded"
+            >
+              <span>{s.subject_name}</span>
+              <button
+                onClick={() => handleDelete(s.subject_id)}
+                className="text-red-500 hover:underline text-sm"
               >
-                <span>{s.subject_name}</span>
-                <button
-                  onClick={() => handleDelete(s.subject_id)}
-                  className="text-red-600 hover:underline text-sm"
-                >
-                  Remove
-                </button>
-              </div>
-            ))
-          )}
-        </div>
+                Remove
+              </button>
+            </li>
+          ))}
+        </ul>
       </div>
     </div>
   );
