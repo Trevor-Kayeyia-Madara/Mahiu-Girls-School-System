@@ -8,6 +8,7 @@ class Grade(db.Model):
     student_id = db.Column(db.Integer, db.ForeignKey('students.student_id'), nullable=False)
     exam_schedule_id = db.Column(db.Integer, db.ForeignKey('exam_schedules.id'), nullable=False)
 
+    subject_id = db.Column(db.Integer, db.ForeignKey('subjects.subject_id'), nullable=False)
     marks = db.Column(db.Float, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
