@@ -49,6 +49,7 @@ export default function LoginPage() {
           placeholder="Email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
+          autoComplete='email'
         />
         <input
           className="w-full border p-2 rounded mb-4"
@@ -56,6 +57,7 @@ export default function LoginPage() {
           placeholder="Password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
+          autoComplete='current-password'
         />
         <button className="bg-blue-600 text-white px-4 py-2 rounded w-full" type="submit">
           Login
