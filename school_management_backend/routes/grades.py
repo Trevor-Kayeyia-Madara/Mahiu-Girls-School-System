@@ -18,11 +18,24 @@ def get_all_grades(current_user):
     result = []
 
     for g in grades:
+        student = g.student
+        exam_schedule = g.exam_schedule  # ✅ FIXED HERE
+        class_assignment = exam_schedule.class_assignment if exam_schedule else None 
+        subject = class_assignment.subject if class_assignment else None
+        classroom = class_assignment.classroom if class_assignment else None
+        exam = exam_schedule.exam if exam_schedule else None
+        teacher = class_assignment.teacher if class_assignment else None
+
         result.append({
             'grade_id': g.grade_id,
-            'student_id': g.student_id,
-            'exam_schedule_id': g.exam_schedule_id,
-            'marks': g.marks
+            'student_name': f"{student.first_name} {student.last_name}",
+            'admission_number': student.admission_number,
+            'subject': subject.name if subject else '',
+            'score': g.marks,
+            'exam_name': exam.name if exam else '',
+            'term': exam.term if exam else '',
+            'year': exam.year if exam else '',
+            'teacher_name': f"{teacher.first_name} {teacher.last_name}" if teacher else ''
         })
 
     return jsonify(result), 200
