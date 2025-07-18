@@ -259,7 +259,35 @@ const handleDelete = async (id: number) => {
             </option>
             
           ))}
-          <div className="my-6">
+        </select>
+      </div>
+
+      {/* Enter Marks */}
+      {selectedSchedule?.class_assignment.students && (
+        <>
+          <table className="w-full bg-white shadow rounded mb-4">
+            <thead className="bg-gray-100">
+              <tr>
+                <th className="p-2">Student</th>
+                <th className="p-2">Marks</th>
+              </tr>
+            </thead>
+            <tbody>
+              {selectedSchedule.class_assignment.students.map(student => (
+                <tr key={student.student_id}>
+                  <td className="p-2">{student.first_name} {student.last_name}</td>
+                  <td className="p-2">
+                    <input
+                      type="number"
+                      className="w-full border px-2 py-1 rounded"
+                      value={marks[student.student_id] || ''}
+                      onChange={e => handleMarkChange(student.student_id, e.target.value)}
+                    />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+            <div className="my-6">
   <h2 className="text-lg font-semibold mb-2">📄 All Exam Schedules</h2>
 
   {schedules.map(s => (
@@ -328,34 +356,6 @@ const handleDelete = async (id: number) => {
   ))}
 </div>
 
-        </select>
-      </div>
-
-      {/* Enter Marks */}
-      {selectedSchedule?.class_assignment.students && (
-        <>
-          <table className="w-full bg-white shadow rounded mb-4">
-            <thead className="bg-gray-100">
-              <tr>
-                <th className="p-2">Student</th>
-                <th className="p-2">Marks</th>
-              </tr>
-            </thead>
-            <tbody>
-              {selectedSchedule.class_assignment.students.map(student => (
-                <tr key={student.student_id}>
-                  <td className="p-2">{student.first_name} {student.last_name}</td>
-                  <td className="p-2">
-                    <input
-                      type="number"
-                      className="w-full border px-2 py-1 rounded"
-                      value={marks[student.student_id] || ''}
-                      onChange={e => handleMarkChange(student.student_id, e.target.value)}
-                    />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
           </table>
 
           <button
