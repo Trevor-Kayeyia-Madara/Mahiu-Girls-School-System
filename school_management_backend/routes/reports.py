@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify, send_file, Response
-from io import BytesIO
+from io import BytesIO, TextIOWrapper
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4
 from sqlalchemy.orm import joinedload
@@ -265,7 +265,8 @@ def export_class_csv(current_user, class_id):
     students = Student.query.filter_by(class_id=class_id).all()
 
     output = BytesIO()
-    writer = csv.writer(output)
+    wrapper = TextIOWrapper(output, encoding='utf-8', newline='')
+    writer = csv.writer(wrapper)
     writer.writerow(['Student Name', 'Subject', 'Score', 'Grade', 'Exam', 'Term', 'Year'])
 
     for s in students:
@@ -281,7 +282,9 @@ def export_class_csv(current_user, class_id):
                 g.year
             ])
 
+    wrapper.flush()
     output.seek(0)
+
     return Response(
         output,
         mimetype="text/csv",
