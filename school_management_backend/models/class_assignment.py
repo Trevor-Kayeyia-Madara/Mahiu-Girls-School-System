@@ -10,6 +10,10 @@ class ClassAssignment(db.Model):
     classroom = db.relationship('Classroom', backref='subject_assignments')
     subject = db.relationship('Subject')
     teacher = db.relationship('Teacher', back_populates='subject_assignments', overlaps="assigned_teacher")
+    
+    @property
+    def students(self):
+        return self.classroom.students
 
 
     assigned_teacher = db.relationship('Teacher', back_populates='subject_assignments')
