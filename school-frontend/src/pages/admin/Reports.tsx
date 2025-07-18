@@ -25,117 +25,87 @@ export default function AdminReports() {
   const headers = useMemo(() => ({ Authorization: `Bearer ${token}` }), [token])
 
   useEffect(() => {
-    const fetchClasses = async () => {
-      try {
-        const res = await axios.get('http://localhost:5001/api/v1/classrooms', { headers })
-        setClasses(Array.isArray(res.data) ? res.data : [])
-      } catch (err) {
-        console.error('Error loading classes', err)
-      }
-    }
-
-    fetchClasses()
+    axios.get('http://localhost:5001/api/v1/classrooms', { headers })
+      .then(res => setClasses(res.data || []))
+      .catch(err => console.error('Error loading classes', err))
   }, [headers])
 
   useEffect(() => {
     if (!selectedClassId) return
-
-    const fetchStudents = async () => {
-      try {
-        const res = await axios.get(`http://localhost:5001/api/v1/students/class/${selectedClassId}`, { headers })
-        setStudents(Array.isArray(res.data) ? res.data : [])
-      } catch (err) {
-        console.error('Error loading students', err)
-      }
-    }
-
-    fetchStudents()
+    axios.get(`http://localhost:5001/api/v1/students/class/${selectedClassId}`, { headers })
+      .then(res => setStudents(res.data || []))
+      .catch(err => console.error('Error loading students', err))
   }, [selectedClassId, headers])
 
-  const exportClassPDF = async () => {
-    try {
-      const res = await axios.get(`http://localhost:5001/api/v1/reports/export/class/${selectedClassId}/pdf`, {
-        headers,
-        responseType: 'blob',
-      })
-      saveAs(res.data, `class_${selectedClassId}_report.pdf`)
-    } catch (err) {
-      console.error('PDF export failed', err)
-    }
-  }
+  const handleExport = async (type: 'class' | 'student', format: 'pdf' | 'csv') => {
+    const id = type === 'class' ? selectedClassId : selectedStudentId
+    if (!id) return
 
-  const exportClassCSV = async () => {
     try {
-      const res = await axios.get(`http://localhost:5001/api/v1/reports/export/class/${selectedClassId}/csv`, {
-        headers,
-        responseType: 'blob',
-      })
-      saveAs(res.data, `class_${selectedClassId}_report.csv`)
+      const res = await axios.get(
+        `http://localhost:5001/api/v1/reports/export/${type}/${id}/${format}`,
+        { headers, responseType: 'blob' }
+      )
+      saveAs(res.data, `${type}_${id}_report.${format}`)
     } catch (err) {
-      console.error('CSV export failed', err)
-    }
-  }
-
-  const exportStudentPDF = async () => {
-    try {
-      const res = await axios.get(`http://localhost:5001/api/v1/reports/export/student/${selectedStudentId}/pdf`, {
-        headers,
-        responseType: 'blob',
-      })
-      saveAs(res.data, `student_${selectedStudentId}_report.pdf`)
-    } catch (err) {
-      console.error('Student PDF export failed', err)
-    }
-  }
-
-  const exportStudentCSV = async () => {
-    try {
-      const res = await axios.get(`http://localhost:5001/api/v1/reports/export/student/${selectedStudentId}/csv`, {
-        headers,
-        responseType: 'blob',
-      })
-      saveAs(res.data, `student_${selectedStudentId}_report.csv`)
-    } catch (err) {
-      console.error('Student CSV export failed', err)
+      console.error(`${type} ${format.toUpperCase()} export failed`, err)
     }
   }
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-6">📊 Admin Reports</h1>
+    <div className="p-6 max-w-4xl mx-auto">
+      <h1 className="text-2xl font-bold mb-6">📊 Admin Reports Dashboard</h1>
 
-      <div className="mb-4 space-y-2">
-        <div>
-          <label className="block font-medium mb-1">Select Class</label>
-          <select
-            value={selectedClassId ?? ''}
-            onChange={(e) => {
-              setSelectedClassId(Number(e.target.value) || null)
-              setSelectedStudentId(null)
-              setShowStudentModal(false)
-            }}
-            className="border p-2 rounded w-full max-w-md"
-          >
-            <option value="">-- Select Class --</option>
-            {classes.map((cls) => (
-              <option key={cls.class_id} value={cls.class_id}>
-                {cls.class_name}
-              </option>
-            ))}
-          </select>
-        </div>
+      {/* Class Selection */}
+      <div className="mb-6 bg-gray-50 p-4 rounded shadow">
+        <label className="block font-medium mb-2">Select Class</label>
+        <select
+          value={selectedClassId?.toString() || ''}
+          onChange={(e) => {
+            const id = parseInt(e.target.value)
+            setSelectedClassId(isNaN(id) ? null : id)
+            setSelectedStudentId(null)
+          }}
+          className="border border-gray-300 p-2 rounded w-full"
+        >
+          <option value="">-- Select Class --</option>
+          {classes.map(cls => (
+            <option key={cls.class_id} value={cls.class_id}>
+              {cls.class_name}
+            </option>
+          ))}
+        </select>
 
-        <div>
-          <label className="block font-medium mb-1">Select Student</label>
+        {selectedClassId && (
+          <div className="mt-4 flex gap-3">
+            <button
+              onClick={() => handleExport('class', 'pdf')}
+              className="bg-red-600 text-white px-4 py-2 rounded"
+            >
+              ⬇ Export PDF
+            </button>
+            <button
+              onClick={() => handleExport('class', 'csv')}
+              className="bg-green-600 text-white px-4 py-2 rounded"
+            >
+              ⬇ Export CSV
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Student Section */}
+      {selectedClassId && (
+        <div className="bg-gray-50 p-4 rounded shadow">
+          <h2 className="text-lg font-semibold mb-2">🎓 Student Report</h2>
+          <label className="block font-medium mb-2">Select Student</label>
           <select
-            value={selectedStudentId ?? ''}
+            value={selectedStudentId?.toString() || ''}
             onChange={(e) => {
-              const id = Number(e.target.value)
-              setSelectedStudentId(id || null)
-              setShowStudentModal(!!id)
+              const id = parseInt(e.target.value)
+              setSelectedStudentId(isNaN(id) ? null : id)
             }}
-            disabled={!selectedClassId}
-            className="border p-2 rounded w-full max-w-md"
+            className="border border-gray-300 p-2 rounded w-full"
           >
             <option value="">-- Select Student --</option>
             {students.map((s) => (
@@ -144,38 +114,39 @@ export default function AdminReports() {
               </option>
             ))}
           </select>
-        </div>
-      </div>
 
-      {selectedClassId && (
-        <div className="space-x-3 mb-4">
-          <button onClick={exportClassPDF} className="bg-red-600 text-white px-4 py-2 rounded">
-            ⬇ Export Class PDF
-          </button>
-          <button onClick={exportClassCSV} className="bg-green-600 text-white px-4 py-2 rounded">
-            ⬇ Export Class CSV
-          </button>
+          {selectedStudentId && (
+            <div className="mt-4 flex flex-col gap-3">
+              <div className="flex gap-3">
+                <button
+                  onClick={() => handleExport('student', 'pdf')}
+                  className="bg-blue-600 text-white px-4 py-2 rounded"
+                >
+                  ⬇ Export Student PDF
+                </button>
+                <button
+                  onClick={() => handleExport('student', 'csv')}
+                  className="bg-purple-600 text-white px-4 py-2 rounded"
+                >
+                  ⬇ Export Student CSV
+                </button>
+              </div>
+              <button
+                onClick={() => setShowStudentModal(true)}
+                className="text-sm text-blue-500 underline mt-2 self-start"
+              >
+                View Detailed Report
+              </button>
+            </div>
+          )}
         </div>
       )}
 
-      {selectedStudentId && (
-        <div className="space-x-3 mb-4">
-          <button onClick={exportStudentPDF} className="bg-blue-600 text-white px-4 py-2 rounded">
-            ⬇ Export Student PDF
-          </button>
-          <button onClick={exportStudentCSV} className="bg-purple-600 text-white px-4 py-2 rounded">
-            ⬇ Export Student CSV
-          </button>
-        </div>
-      )}
-
+      {/* Student Report Modal */}
       {showStudentModal && selectedStudentId && (
         <StudentReportModal
           studentId={selectedStudentId}
-          onClose={() => {
-            setShowStudentModal(false)
-            setSelectedStudentId(null)
-          }}
+          onClose={() => setShowStudentModal(false)}
         />
       )}
     </div>

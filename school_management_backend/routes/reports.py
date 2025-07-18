@@ -23,7 +23,7 @@ def aggregate_form1_2(grades):
     for g in grades:
         key = g.subject_id
         grouped.setdefault(key, {'subject': g.subject.name, 'scores': []})
-        grouped[key]['scores'].append((g.exam.name, g.score))
+        grouped[key]['scores'].append((g.exam_schedule.exam.name if g.exam_schedule and g.exam_schedule.exam else 'Unknown', g.marks))
 
     result = []
     for sub in grouped.values():
@@ -42,45 +42,54 @@ def aggregate_form1_2(grades):
 
     return result
 
-
 @report_bp.route('/student/<int:student_id>', methods=['GET'])
 @token_required
 def student_report(current_user, student_id):
+    # Get student and their class
     student = Student.query.options(joinedload(Student.classroom)).get_or_404(student_id)
 
-    if current_user.role not in ['admin', 'teacher'] and current_user.user_id != getattr(student.user, 'user_id', None):
+    # Access control: only admins or teachers allowed
+    if current_user.role not in ['admin', 'teacher']:
         return jsonify({'error': 'Access denied'}), 403
 
-    grades = Grade.query.filter_by(student_id=student_id).options(
-        joinedload(Grade.subject), joinedload(Grade.exam)
-    ).all()
+    # Get grades with subject and exam data
+    grades = (
+        Grade.query
+        .filter_by(student_id=student_id)
+        .options(
+            joinedload(Grade.subject),
+            joinedload(Grade.exam_schedule).joinedload(ExamSchedule.exam)
+        )
+        .all()
+    )
 
     if not grades:
         return jsonify({'message': 'No grades found for this student'}), 404
 
-    if is_kcse_style(student.classroom.class_name):
-        # Form 3–4: individual entries
-        subject_grades = [{
-            'subject': g.subject.name,
-            'exam': g.exam.name,
-            'score': g.score,
-            'term': g.term,
-            'year': g.year,
-            'grade': get_kcse_grade(g.score)
-        } for g in grades]
-        average = round(sum(g['score'] for g in subject_grades) / len(subject_grades), 2)
-    else:
-        # Form 1–2: aggregate by subject
-        subject_grades = aggregate_form1_2(grades)
-        average = round(sum(g['score'] for g in subject_grades) / len(subject_grades), 2)
+    report_items = []
+    for g in grades:
+        exam = g.exam_schedule.exam if g.exam_schedule else None
+        report_items.append({
+            'subject': g.subject.name if g.subject else 'N/A',
+            'exam_schedule': {
+                'exam': {
+                    'name': exam.name if exam else 'N/A'
+                } if exam else None
+            } if g.exam_schedule else None,
+            'marks': g.marks,
+            'grade': get_kcse_grade(g.marks),
+            'term': exam.term if exam else 'N/A',
+            'year': exam.year if exam else 'N/A'
+        })
 
     return jsonify({
         'student_id': student.student_id,
         'student_name': f"{student.first_name} {student.last_name}",
-        'class_name': student.classroom.class_name,
-        'average_score': average,
-        'grades': subject_grades
+        'class_name': student.classroom.class_name if student.classroom else '',
+        'average_score': round(sum(g.marks for g in grades) / len(grades), 2),
+        'grades': report_items
     }), 200
+
 
 
 @report_bp.route('/class/<int:class_id>', methods=['GET'])
@@ -125,7 +134,7 @@ def export_student_pdf(current_user, student_id):
     if current_user.role not in ['admin', 'teacher'] and current_user.user_id != getattr(student.user, 'user_id', None):
         return jsonify({'error': 'Access denied'}), 403
 
-    grades = Grade.query.filter_by(student_id=student_id).options(joinedload(Grade.subject), joinedload(Grade.exam)).all()
+    grades = Grade.query.filter_by(student_id=student_id).options(joinedload(Grade.subject), joinedload(Grade.exam_schedule)).all()
     if not grades:
         return jsonify({'error': 'No grades to export'}), 404
 
@@ -159,10 +168,10 @@ def export_student_pdf(current_user, student_id):
             p.showPage()
             y = height - 40
         p.drawString(60, y, g.subject.name)
-        p.drawString(180, y, g.exam.name)
-        p.drawString(300, y, str(g.score))
-        p.drawString(360, y, g.term)
-        p.drawString(420, y, str(g.year))
+        p.drawString(180, y, g.exam_schedule.exam.name if g.exam_schedule and g.exam_schedule.exam else "N/A")  # ✅ Safe access
+        p.drawString(300, y, str(g.marks))
+        p.drawString(360, y, g.exam_schedule.exam.term)
+        p.drawString(420, y, str(g.exam_schedule.exam.year))
         y -= 15
 
     p.save()
