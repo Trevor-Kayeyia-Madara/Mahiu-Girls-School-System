@@ -81,7 +81,7 @@ def get_my_class_subjects(current_user):
 
     result = [{
         'class_id': a.class_id,
-        'class_name': a.classroom.name,
+        'class_name': a.classroom.class_name,
         'subject_id': a.subject_id,
         'subject_name': a.subject.name
     } for a in assignments]
