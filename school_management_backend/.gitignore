@@ -1,0 +1,14 @@
+venv# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python/
+env/
+venv/
+seed.py/
+migrations/
+*.env
+instance/
+.idea/  # PyCharm files
+.vscode/ # VS Code files
