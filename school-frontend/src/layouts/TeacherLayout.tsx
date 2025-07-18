@@ -15,6 +15,7 @@ export default function TeacherLayout() {
           <NavLink to="/teacher/teacher-exam" className="block hover:underline">Enter Exam Marks</NavLink>
           <NavLink to="/teacher/grade-summary" className="block hover:underline">Overall Grades</NavLink>
           <NavLink to="/teacher/subjects" className="block hover:underline">Assigned Subjects</NavLink>
+          <NavLink to="/teacher/reports" className="block hover:underline">View Reports</NavLink>
           {/* Add more links here later */}
         </nav>
         <button onClick={logout} className="mt-6 bg-red-600 px-4 py-1 rounded">Logout</button>
