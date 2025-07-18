@@ -10,6 +10,7 @@ export default function LoginPage() {
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -32,11 +33,13 @@ export default function LoginPage() {
 
       login(user)
 
-      toast.success(`Welcome ${user.name}!`)
+      toast.success(`Welcome back, ${user.name}! Redirecting...`)
 
-      if (user.role === 'admin') navigate('/admin')
-      else if (user.role === 'teacher') navigate('/teacher')
-      else if (user.role === 'parent') navigate('/parent')
+      setTimeout(() => {
+        if (user.role === 'admin') navigate('/admin')
+        else if (user.role === 'teacher') navigate('/teacher')
+        else if (user.role === 'parent') navigate('/parent')
+      }, 1500)
     } catch (err: any) {
       toast.error(err?.response?.data?.error || 'Login failed')
     } finally {
@@ -46,43 +49,55 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100">
-      <div className="bg-white shadow-xl rounded-xl p-8 w-full max-w-md transition-all duration-500 ease-in-out transform hover:scale-[1.01] animate-fadeIn">
-        <div className="text-center mb-6">
-          <h2 className="text-2xl font-bold text-gray-800">🔐 Login</h2>
-          <p className="text-sm text-gray-600 mt-1">Secure access to your portal</p>
-        </div>
+      <div className="bg-white shadow-2xl rounded-xl p-8 w-full max-w-md animate-fadeIn">
+        <h2 className="text-2xl font-bold text-center text-blue-800 mb-6">🔐 Secure Login</h2>
 
-        <form onSubmit={handleLogin} className="space-y-5 transition duration-300 ease-in-out">
+        <form onSubmit={handleLogin} className="space-y-5 transition-all">
+          {/* Email */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+            <label className="text-sm font-medium text-gray-700">Email</label>
             <input
               type="email"
-              className="w-full border border-gray-300 px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full border px-3 py-2 rounded focus:ring-2 focus:ring-blue-500 outline-none"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
+              autoComplete="email"
             />
           </div>
 
+          {/* Password */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-            <input
-              type="password"
-              className="w-full border border-gray-300 px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
+            <label className="text-sm font-medium text-gray-700">Password</label>
+            <div className="relative">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                className="w-full border px-3 py-2 rounded focus:ring-2 focus:ring-blue-500 outline-none pr-10"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                autoComplete="current-password"
+              />
+              <button
+                type="button"
+                className="absolute right-2 top-2 text-gray-500 hover:text-blue-500"
+                onClick={() => setShowPassword(!showPassword)}
+                tabIndex={-1}
+              >
+                {showPassword ? '🙈' : '👁️'}
+              </button>
+            </div>
           </div>
 
+          {/* Submit */}
           <button
             type="submit"
             disabled={isLoading}
-            className={`w-full flex justify-center items-center gap-2 bg-blue-600 hover:bg-blue-700 transition text-white font-semibold py-2 rounded shadow ${
+            className={`w-full flex justify-center items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded shadow ${
               isLoading ? 'opacity-60 cursor-not-allowed' : ''
             }`}
           >
-            {isLoading && (
+            {isLoading ? (
               <svg
                 className="animate-spin h-5 w-5 text-white"
                 xmlns="http://www.w3.org/2000/svg"
@@ -103,14 +118,13 @@ export default function LoginPage() {
                   d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
                 />
               </svg>
+            ) : (
+              'Login'
             )}
-            {isLoading ? 'Logging in...' : 'Login'}
           </button>
         </form>
 
-        <p className="text-xs text-gray-500 text-center mt-4">
-          Trouble logging in? Contact your administrator.
-        </p>
+        <p className="text-xs text-center text-gray-500 mt-4">Need help? Contact the administrator.</p>
       </div>
     </div>
   )
