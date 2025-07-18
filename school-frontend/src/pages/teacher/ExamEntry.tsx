@@ -1,7 +1,5 @@
-
 /* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-
 import { useEffect, useState } from 'react'
 import axios from 'axios'
 
@@ -43,11 +41,16 @@ export default function ExamSchedulesPage() {
   const [exams, setExams] = useState<Exam[]>([])
   const [assignments, setAssignments] = useState<ClassAssignment[]>([])
   const [schedules, setSchedules] = useState<Schedule[]>([])
+
   const [selectedExamId, setSelectedExamId] = useState<number | null>(null)
   const [selectedAssignmentId, setSelectedAssignmentId] = useState<number | null>(null)
+
   const [editingId, setEditingId] = useState<number | null>(null)
   const [editExamId, setEditExamId] = useState<number | null>(null)
   const [editAssignmentId, setEditAssignmentId] = useState<number | null>(null)
+
+  const [openGradesId, setOpenGradesId] = useState<number | null>(null)
+  const [gradeInputs, setGradeInputs] = useState<{ student_id: number; full_name: string; marks: string }[]>([])
 
   const token = localStorage.getItem('token')
   const headers = { Authorization: `Bearer ${token}` }
@@ -115,6 +118,7 @@ export default function ExamSchedulesPage() {
     setEditingId(s.id)
     setEditExamId(s.exam.exam_id)
     setEditAssignmentId(s.class_assignment?.id ?? null)
+    setOpenGradesId(null)
   }
 
   const handleSubmitEdit = async () => {
@@ -148,11 +152,34 @@ export default function ExamSchedulesPage() {
     }
   }
 
+  const handleSubmitGrades = async (examScheduleId: number) => {
+    const entries = gradeInputs
+      .filter((g) => g.marks !== '')
+      .map((g) => ({
+        student_id: g.student_id,
+        marks: Number(g.marks),
+      }))
+
+    if (entries.length === 0) return alert('❌ Please enter at least one mark.')
+
+    try {
+      await axios.post(`${API}/grades/`, {
+        exam_schedule_id: examScheduleId,
+        grades: entries,
+      }, { headers })
+
+      alert('✅ Grades saved successfully!')
+      setOpenGradesId(null)
+    } catch {
+      alert('❌ Failed to save grades.')
+    }
+  }
+
   return (
     <div className="max-w-4xl mx-auto p-6">
       <h1 className="text-2xl font-bold mb-4">📚 Exam Schedules</h1>
 
-      {/* Create Schedule Form */}
+      {/* Create Form */}
       <div className="bg-white p-4 rounded shadow mb-6">
         <h2 className="font-semibold text-lg mb-3">➕ Create New Schedule</h2>
 
@@ -175,21 +202,17 @@ export default function ExamSchedulesPage() {
         <div className="mb-3">
           <label className="block mb-1 font-medium">Select Class Assignment</label>
           <select
-  className="w-full border rounded p-2"
-  value={selectedAssignmentId ?? ''}
-  onChange={(e) => {
-    const value = e.target.value
-    setSelectedAssignmentId(value ? parseInt(value) : null)
-  }}
->
-  <option value="">-- Choose Assignment --</option>
-  {assignments.map((a) => (
-    <option key={a.id} value={a.id}>
-      {a.class_name} - {a.subject_name}
-    </option>
-  ))}
-</select>
-
+            className="w-full border rounded p-2"
+            value={selectedAssignmentId ?? ''}
+            onChange={(e) => setSelectedAssignmentId(e.target.value ? Number(e.target.value) : null)}
+          >
+            <option value="">-- Choose Assignment --</option>
+            {assignments.map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.class_name} - {a.subject_name}
+              </option>
+            ))}
+          </select>
         </div>
 
         <button
@@ -201,7 +224,7 @@ export default function ExamSchedulesPage() {
         </button>
       </div>
 
-      {/* Schedule List */}
+      {/* List */}
       <div className="bg-white p-4 rounded shadow">
         <h2 className="text-lg font-semibold mb-4">📋 All Schedules</h2>
 
@@ -216,6 +239,24 @@ export default function ExamSchedulesPage() {
                   {s.class_assignment.subject.name})
                 </div>
                 <div className="space-x-2">
+                  <button
+                    onClick={() => {
+                      setEditingId(null)
+                      setOpenGradesId((prev) =>
+                        prev === s.id ? null : s.id
+                      )
+                      setGradeInputs(
+                        s.class_assignment.students.map((stu) => ({
+                          student_id: stu.student_id,
+                          full_name: `${stu.first_name} ${stu.last_name}`,
+                          marks: ''
+                        }))
+                      )
+                    }}
+                    className="text-purple-600 hover:underline"
+                  >
+                    🎯 Enter Grades
+                  </button>
                   <button
                     onClick={() => handleEdit(s)}
                     className="text-blue-600 hover:underline"
@@ -280,6 +321,41 @@ export default function ExamSchedulesPage() {
                       Cancel
                     </button>
                   </div>
+                </div>
+              )}
+
+              {/* Grade Entry */}
+              {openGradesId === s.id && (
+                <div className="mt-3 bg-gray-100 p-4 rounded">
+                  <h3 className="text-md font-semibold mb-2">📝 Enter Grades</h3>
+                  {gradeInputs.length === 0 ? (
+                    <p className="text-gray-500">No students found in this class.</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {gradeInputs.map((g, idx) => (
+                        <div key={g.student_id} className="flex items-center space-x-4">
+                          <div className="w-1/2">{g.full_name}</div>
+                          <input
+                            type="number"
+                            className="w-24 border rounded p-1"
+                            placeholder="Marks"
+                            value={g.marks}
+                            onChange={(e) => {
+                              const updated = [...gradeInputs]
+                              updated[idx].marks = e.target.value
+                              setGradeInputs(updated)
+                            }}
+                          />
+                        </div>
+                      ))}
+                      <button
+                        onClick={() => handleSubmitGrades(s.id)}
+                        className="mt-2 bg-blue-600 text-white px-3 py-1 rounded"
+                      >
+                        💾 Submit Grades
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
