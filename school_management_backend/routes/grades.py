@@ -43,33 +43,37 @@ def enter_grades(current_user):
     if not exam_schedule:
         return jsonify({"error": "ExamSchedule not found"}), 404
 
-    responses = []
+    # Ensure subject_id exists from class assignment
+    class_assignment = exam_schedule.class_assignment
+    if not class_assignment or not class_assignment.subject_id:
+        return jsonify({"error": "Related subject not found in class assignment."}), 500
 
-    # Optional: Validate students if classroom linkage exists
-    if hasattr(exam_schedule, 'class_assignment') and hasattr(exam_schedule.class_assignment, 'classroom'):
-        valid_student_ids = [s.student_id for s in exam_schedule.class_assignment.classroom.students]
-    else:
-        valid_student_ids = None
+    subject_id = class_assignment.subject_id
+    valid_student_ids = [s.student_id for s in class_assignment.classroom.students]
+
+    responses = []
 
     for entry in entries:
         student_id = entry.get('student_id')
         marks = entry.get('marks')
 
-        if student_id is None or marks is None:
+        if student_id is None or marks is None or student_id not in valid_student_ids:
             continue
 
-        if valid_student_ids and student_id not in valid_student_ids:
-            continue
-
-        existing_grade = Grade.query.filter_by(student_id=student_id, exam_schedule_id=exam_schedule_id).first()
+        existing_grade = Grade.query.filter_by(
+            student_id=student_id,
+            exam_schedule_id=exam_schedule_id
+        ).first()
 
         if existing_grade:
             existing_grade.marks = marks
+            existing_grade.subject_id = subject_id  # Ensure update in case subject was added later
             status = "updated"
         else:
             new_grade = Grade(
                 student_id=student_id,
                 exam_schedule_id=exam_schedule_id,
+                subject_id=subject_id,
                 marks=marks
             )
             db.session.add(new_grade)
