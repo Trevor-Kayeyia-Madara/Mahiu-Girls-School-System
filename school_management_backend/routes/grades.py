@@ -35,7 +35,7 @@ def get_all_grades(current_user):
             'exam_name': exam.name if exam else '',
             'term': exam.term if exam else '',
             'year': exam.year if exam else '',
-            'teacher_name': f"{teacher.first_name} {teacher.last_name}" if teacher else ''
+           'teacher_name': f"{teacher.user.name}" if teacher and teacher.user else ''
         })
 
     return jsonify(result), 200
