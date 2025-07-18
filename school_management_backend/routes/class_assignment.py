@@ -64,6 +64,9 @@ def delete_assignment(current_user, class_id, subject_id):
     db.session.commit()
     return jsonify({'message': 'Assignment removed'}), 200
 
+
+# Get Personal Teacher classes
+
 @assignment_bp.route('/me', methods=['GET', 'OPTIONS'])
 @token_required
 def get_my_class_subjects(current_user):
