@@ -65,10 +65,7 @@ export default function ExamSchedulesPage() {
       const { data } = await axios.get(`${API}/exams/`)
       setExams(data)
     } catch {
-      // Using console.error for better debugging in development
-      console.error('❌ Could not fetch exams.')
-      // Use a custom message box instead of alert() for better UX
-      // alert('❌ Could not fetch exams.')
+      alert('❌ Could not fetch exams.')
     }
   }
 
@@ -80,8 +77,7 @@ export default function ExamSchedulesPage() {
       })
       setAssignments(data)
     } catch {
-      console.error('❌ Could not fetch class assignments.')
-      // alert('❌ Could not fetch class assignments.')
+      alert('❌ Could not fetch class assignments.')
     }
   }
 
@@ -93,15 +89,14 @@ export default function ExamSchedulesPage() {
       })
       setSchedules(data)
     } catch {
-      console.error('❌ Could not fetch exam schedules.')
-      // alert('❌ Could not fetch exam schedules.')
+      alert('❌ Could not fetch exam schedules.')
     }
   }
 
   const handleCreateSchedule = async () => {
     const token = localStorage.getItem('token')
     if (!token || !selectedExamId || !selectedAssignmentId)
-      return console.warn('❌ Select both an exam and a class assignment.') // Changed alert
+      return alert('❌ Select both an exam and a class assignment.')
 
     try {
       await axios.post(`${API}/exam-schedules`, {
@@ -110,59 +105,56 @@ export default function ExamSchedulesPage() {
       }, {
         headers: { Authorization: `Bearer ${token}` }
       })
-      console.log('✅ Schedule created') // Changed alert
+      alert('✅ Schedule created')
       fetchSchedules()
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       if (err.response?.status === 409) {
-        console.error('❌ Schedule already exists.') // Changed alert
+        alert('❌ Schedule already exists.')
       } else {
-        console.error('❌ Failed to create schedule.', err) // Changed alert
+        alert('❌ Failed to create schedule.')
       }
     }
   }
   const handleEdit = (schedule: ExamSchedule) => {
-    setEditingId(schedule.id)
-    setEditExamId(schedule.exam.exam_id)
-    setEditAssignmentId(schedule.class_assignment.id)
+  setEditingId(schedule.id)
+  setEditExamId(schedule.exam.exam_id)
+  setEditAssignmentId(schedule.class_assignment.id)
+}
+
+const submitEdit = async () => {
+  if (!editingId || !editExamId || !editAssignmentId) return alert("Missing fields")
+
+  try {
+    const token = localStorage.getItem("token")
+    await axios.put(`${API}/exam-schedules/${editingId}`, {
+      exam_id: editExamId,
+      class_assignment_id: editAssignmentId
+    }, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    alert("✅ Schedule updated")
+    setEditingId(null)
+    fetchSchedules()
+  } catch {
+    alert("❌ Failed to update schedule")
   }
+}
 
-  const submitEdit = async () => {
-    if (!editingId || !editExamId || !editAssignmentId) return console.warn("Missing fields") // Changed alert
+const handleDelete = async (id: number) => {
+  if (!window.confirm("Are you sure you want to delete this schedule?")) return
 
-    try {
-      const token = localStorage.getItem("token")
-      await axios.put(`${API}/exam-schedules/${editingId}`, {
-        exam_id: editExamId,
-        class_assignment_id: editAssignmentId
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-      console.log("✅ Schedule updated") // Changed alert
-      setEditingId(null)
-      fetchSchedules()
-    } catch (error) {
-      console.error("❌ Failed to update schedule", error) // Changed alert
-    }
+  try {
+    const token = localStorage.getItem("token")
+    await axios.delete(`${API}/exam-schedules/${id}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    alert("🗑 Schedule deleted")
+    fetchSchedules()
+  } catch {
+    alert("❌ Could not delete schedule")
   }
-
-  const handleDelete = async (id: number) => {
-    // Use a custom modal/confirmation dialog instead of window.confirm
-    const confirmed = window.confirm("Are you sure you want to delete this schedule?") // Still using window.confirm for now as no custom UI provided
-
-    if (!confirmed) return
-
-    try {
-      const token = localStorage.getItem("token")
-      await axios.delete(`${API}/exam-schedules/${id}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-      console.log("🗑 Schedule deleted") // Changed alert
-      fetchSchedules()
-    } catch (error) {
-      console.error("❌ Could not delete schedule", error) // Changed alert
-    }
-  }
+}
 
 
   const handleMarkChange = (studentId: number, value: string) => {
@@ -173,14 +165,14 @@ export default function ExamSchedulesPage() {
   }
 
   const submitGrades = async () => {
-    if (!selectedSchedule) return console.warn('❌ No schedule selected.') // Changed alert
+    if (!selectedSchedule) return alert('❌ No schedule selected.')
     const token = localStorage.getItem('token')
 
     const entries = Object.entries(marks).map(([id, score]) => ({
       student_id: parseInt(id),
       marks: score
     }))
-    if (!entries.length) return console.warn('❌ No marks entered.') // Changed alert
+    if (!entries.length) return alert('❌ No marks entered.')
 
     setSubmitting(true)
     try {
@@ -190,11 +182,11 @@ export default function ExamSchedulesPage() {
       }, {
         headers: { Authorization: `Bearer ${token}` }
       })
-      console.log('✅ Marks submitted') // Changed alert
+      alert('✅ Marks submitted')
       setMarks({})
       setSelectedSchedule(null)
-    } catch (error) {
-      console.error('❌ Could not submit grades', error) // Changed alert
+    } catch {
+      alert('❌ Could not submit grades')
     } finally {
       setSubmitting(false)
     }
@@ -234,7 +226,7 @@ export default function ExamSchedulesPage() {
             <option value="">-- Select Class Assignment --</option>
             {assignments.map(a => (
               <option key={a.id} value={a.id}>
-                {`${a.classroom?.class_name} - ${a.subject?.name}`} {/* Added optional chaining */}
+                {`${a.classroom.class_name} - ${a.subject.name}`}
               </option>
             ))}
           </select>
@@ -263,8 +255,9 @@ export default function ExamSchedulesPage() {
           <option value="">-- Select Schedule --</option>
           {schedules.map(s => (
             <option key={s.id} value={s.id}>
-              {`${s.exam?.name} - ${s.class_assignment.classroom?.class_name} (${s.class_assignment.subject?.name})`} {/* Added optional chaining */}
+              {`${s.exam.name} - ${s.class_assignment.classroom.class_name} (${s.class_assignment.subject.name})`}
             </option>
+            
           ))}
         </select>
       </div>
@@ -294,77 +287,76 @@ export default function ExamSchedulesPage() {
                 </tr>
               ))}
             </tbody>
-            {/* Moved the div outside the table body to fix HTML structure */}
-          </table>
+            <div className="my-6">
+  <h2 className="text-lg font-semibold mb-2">📄 All Exam Schedules</h2>
 
-          <div className="my-6">
-            <h2 className="text-lg font-semibold mb-2">📄 All Exam Schedules</h2>
+  {schedules.map(s => (
+    <div key={s.id} className="p-4 border rounded mb-3 bg-gray-50">
+      <div className="flex justify-between items-center">
+        <div>
+          <strong>{s.exam.name}</strong> — {s.class_assignment.classroom.class_name} ({s.class_assignment.subject.name})
+        </div>
+        <div className="space-x-2">
+          <button onClick={() => handleEdit(s)} className="text-blue-600 hover:underline">Edit</button>
+          <button onClick={() => handleDelete(s.id)} className="text-red-600 hover:underline">Delete</button>
+        </div>
+      </div>
 
-            {schedules.map(s => (
-              <div key={s.id} className="p-4 border rounded mb-3 bg-gray-50">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <strong>{s.exam?.name}</strong> — {s.class_assignment.classroom?.class_name} ({s.class_assignment.subject?.name}) {/* Added optional chaining */}
-                  </div>
-                  <div className="space-x-2">
-                    <button onClick={() => handleEdit(s)} className="text-blue-600 hover:underline">Edit</button>
-                    <button onClick={() => handleDelete(s.id)} className="text-red-600 hover:underline">Delete</button>
-                  </div>
-                </div>
-
-                {editingId === s.id && (
-                  <div className="mt-3 bg-white p-3 border rounded shadow-sm">
-                    <div className="mb-2">
-                      <label className="block mb-1">Edit Exam:</label>
-                      <select
-                        className="w-full border p-2 rounded"
-                        value={editExamId ?? ''}
-                        onChange={e => setEditExamId(parseInt(e.target.value))}
-                      >
-                        <option value="">-- Select Exam --</option>
-                        {exams.map(e => (
-                          <option key={e.exam_id} value={e.exam_id}>
-                            {e.name} ({e.term} {e.year})
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div className="mb-2">
-                      <label className="block mb-1">Edit Class Assignment:</label>
-                      <select
-                        className="w-full border p-2 rounded"
-                        value={editAssignmentId ?? ''}
-                        onChange={e => setEditAssignmentId(parseInt(e.target.value))}
-                      >
-                        <option value="">-- Select Assignment --</option>
-                        {assignments.map(a => (
-                          <option key={a.id} value={a.id}>
-                            {a.classroom?.class_name} - {a.subject?.name} {/* Added optional chaining */}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div className="space-x-2">
-                      <button
-                        onClick={submitEdit}
-                        className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
-                      >
-                        💾 Save
-                      </button>
-                      <button
-                        onClick={() => setEditingId(null)}
-                        className="bg-gray-300 px-3 py-1 rounded hover:bg-gray-400"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            ))}
+      {editingId === s.id && (
+        <div className="mt-3 bg-white p-3 border rounded shadow-sm">
+          <div className="mb-2">
+            <label className="block mb-1">Edit Exam:</label>
+            <select
+              className="w-full border p-2 rounded"
+              value={editExamId ?? ''}
+              onChange={e => setEditExamId(parseInt(e.target.value))}
+            >
+              <option value="">-- Select Exam --</option>
+              {exams.map(e => (
+                <option key={e.exam_id} value={e.exam_id}>
+                  {e.name} ({e.term} {e.year})
+                </option>
+              ))}
+            </select>
           </div>
+
+          <div className="mb-2">
+            <label className="block mb-1">Edit Class Assignment:</label>
+            <select
+              className="w-full border p-2 rounded"
+              value={editAssignmentId ?? ''}
+              onChange={e => setEditAssignmentId(parseInt(e.target.value))}
+            >
+              <option value="">-- Select Assignment --</option>
+              {assignments.map(a => (
+                <option key={a.id} value={a.id}>
+                  {a.classroom.class_name} - {a.subject.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="space-x-2">
+            <button
+              onClick={submitEdit}
+              className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
+            >
+              💾 Save
+            </button>
+            <button
+              onClick={() => setEditingId(null)}
+              className="bg-gray-300 px-3 py-1 rounded hover:bg-gray-400"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  ))}
+</div>
+
+          </table>
 
           <button
             onClick={submitGrades}
