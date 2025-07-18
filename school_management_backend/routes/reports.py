@@ -97,7 +97,7 @@ def class_report(current_user, class_id):
         grades = Grade.query.filter_by(student_id=s.student_id).all()
         if not grades:
             continue
-        avg = round(sum(g.score for g in grades) / len(grades), 2)
+        avg = round(sum(g.marks for g in grades) / len(grades), 2)
         mean_grade = get_kcse_grade(avg)
 
         data.append({
@@ -251,7 +251,7 @@ def export_class_pdf(current_user, class_id):
         if not grades:
             continue
 
-        avg = round(sum(g.score for g in grades) / len(grades), 2)
+        avg = round(sum(g.marks for g in grades) / len(grades), 2)
         grade = get_kcse_grade(avg)
 
         p.setFont("Helvetica", 10)
