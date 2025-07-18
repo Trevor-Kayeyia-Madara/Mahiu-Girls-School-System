@@ -68,7 +68,7 @@ export default function ExamSchedulesPage() {
   const fetchAssignments = async () => {
     try {
       const token = localStorage.getItem('token')
-      const { data } = await axios.get(`${API}/class-assignments`, {
+      const { data } = await axios.get(`${API}/assignments/me`, {
         headers: { Authorization: `Bearer ${token}` }
       })
       setAssignments(data)

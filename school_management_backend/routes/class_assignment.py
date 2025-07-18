@@ -50,7 +50,7 @@ def assign_teacher_to_subject(current_user):
     return jsonify({'message': 'Assignment saved'}), 200
 
 # ❌ Delete assignment
-@assignment_bp.route('/class/<int:class_id>/subject/<int:subject_id>', methods=['DELETE','OPTIONS'])
+@assignment_bp.route('/class/<int:class_id>/subject/<int:subject_id>', methods=['DELETE', 'OPTIONS'])
 @token_required
 def delete_assignment(current_user, class_id, subject_id):
     if current_user.role != 'admin':
@@ -64,7 +64,6 @@ def delete_assignment(current_user, class_id, subject_id):
     db.session.commit()
     return jsonify({'message': 'Assignment removed'}), 200
 
-# 📚 Get all class-subject assignments for the current teacher
 @assignment_bp.route('/me', methods=['GET', 'OPTIONS'])
 @token_required
 def get_my_class_subjects(current_user):
@@ -72,7 +71,7 @@ def get_my_class_subjects(current_user):
         return jsonify({'error': 'Unauthorized'}), 403
 
     assignments = ClassAssignment.query \
-        .filter_by(teacher_id=current_user.teacher_id) \
+        .filter_by(teacher_id=current_user.teacher.id) \
         .join(Subject) \
         .join(Classroom) \
         .all()
@@ -82,31 +81,6 @@ def get_my_class_subjects(current_user):
         'class_name': a.classroom.name,
         'subject_id': a.subject_id,
         'subject_name': a.subject.name
-    } for a in assignments]
-
-    return jsonify(result), 200
-
-@assignment_bp.route('/', methods=['GET'])
-@token_required
-def get_all_class_assignments(current_user):
-    if current_user.role != 'teacher':
-        return jsonify({'error': 'Unauthorized'}), 403
-
-    assignments = ClassAssignment.query \
-        .filter_by(teacher_id=current_user.teacher_id) \
-        .join(Subject) \
-        .join(Classroom) \
-        .all()
-
-    result = [{
-        'id': a.id,
-        'subject': {'name': a.subject.name},
-        'classroom': {'class_name': a.classroom.name},
-        'students': [{
-            'student_id': s.id,
-            'first_name': s.user.first_name,
-            'last_name': s.user.last_name
-        } for s in a.classroom.students]
     } for a in assignments]
 
     return jsonify(result), 200
