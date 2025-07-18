@@ -1,10 +1,11 @@
 from flask import Blueprint, request, jsonify, send_file, Response
-from io import BytesIO, TextIOWrapper
+from sqlalchemy.orm import joinedload
+from io import StringIO, BytesIO
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4
 from sqlalchemy.orm import joinedload
 from app import db
-from models import Student, Classroom, Grade, Subject, Exam
+from models import Student, Classroom, Grade, Subject, ExamSchedule
 from utils.auth_utils import token_required
 from utils.grade_utils import get_kcse_grade
 import csv
@@ -174,42 +175,59 @@ def export_student_pdf(current_user, student_id):
         mimetype='application/pdf'
     )
 
-
 @report_bp.route('/export/student/<int:student_id>/csv', methods=['GET'])
 @token_required
 def export_student_csv(current_user, student_id):
-    student = Student.query.get_or_404(student_id)
-    if current_user.role not in ['admin', 'teacher'] and current_user.user_id != getattr(student.user, 'user_id', None):
+    if current_user.role not in ['admin', 'teacher', 'student']:
         return jsonify({'error': 'Access denied'}), 403
 
-    grades = Grade.query.filter_by(student_id=student_id).options(joinedload(Grade.subject), joinedload(Grade.exam)).all()
-    if not grades:
-        return jsonify({'error': 'No grades to export'}), 404
+    student = Student.query.get_or_404(student_id)
 
-    output = BytesIO()
-    writer = csv.writer(output)
-    writer.writerow(['Subject', 'Exam', 'Score', 'Grade', 'Term', 'Year'])
+    if current_user.role == 'student' and current_user.user_id != student.user_id:
+        return jsonify({'error': 'Unauthorized access to another student\'s data'}), 403
 
-    for g in grades:
-        writer.writerow([
-            g.subject.name,
-            g.exam.name,
-            g.score,
-            get_kcse_grade(g.score),
-            g.term,
-            g.year
-        ])
+    text_stream = StringIO()
+    writer = csv.writer(text_stream)
 
-    output.seek(0)
-    return Response(
-        output,
-        mimetype="text/csv",
-        headers={
-            "Content-Disposition": f"attachment; filename={student.first_name}_{student.last_name}_report.csv"
-        }
+    # Optional: add BOM for Excel compatibility
+    text_stream.write('\ufeff')
+
+    writer.writerow(['Student Name', 'Subject', 'Score', 'Grade', 'Exam', 'Term', 'Year'])
+
+    grades = (
+        Grade.query
+        .filter_by(student_id=student_id)
+        .options(
+            joinedload(Grade.subject),
+            joinedload(Grade.exam_schedule).joinedload(ExamSchedule.exam)
+        )
+        .all()
     )
 
+    for g in grades:
+        exam = g.exam_schedule.exam if g.exam_schedule else None
+        writer.writerow([
+            f"{student.first_name} {student.last_name}",
+            g.subject.name if g.subject else '',
+            g.marks,
+            get_kcse_grade(g.marks),
+            exam.name if exam else '',
+            exam.term if exam else '',
+            exam.year if exam else ''
+        ])
 
+    # Encode text and return as binary stream
+    csv_bytes = text_stream.getvalue().encode('utf-8')
+    output = BytesIO(csv_bytes)
+    output.seek(0)
+
+    return Response(
+        output,
+        mimetype='text/csv',
+        headers={
+            'Content-Disposition': f'attachment; filename={student.admission_number}_report.csv'
+        }
+    )
 @report_bp.route('/export/class/<int:class_id>/pdf', methods=['GET'])
 @token_required
 def export_class_pdf(current_user, class_id):
@@ -264,25 +282,40 @@ def export_class_csv(current_user, class_id):
     classroom = Classroom.query.get_or_404(class_id)
     students = Student.query.filter_by(class_id=class_id).all()
 
-    output = BytesIO()
-    wrapper = TextIOWrapper(output, encoding='utf-8', newline='')
-    writer = csv.writer(wrapper)
+    text_stream = StringIO()
+    writer = csv.writer(text_stream)
+    
+    # Optional: BOM for Excel compatibility
+    text_stream.write('\ufeff')  
+
     writer.writerow(['Student Name', 'Subject', 'Score', 'Grade', 'Exam', 'Term', 'Year'])
 
     for s in students:
-        grades = Grade.query.filter_by(student_id=s.student_id).options(joinedload(Grade.subject), joinedload(Grade.exam)).all()
+        grades = (
+            Grade.query
+            .filter_by(student_id=s.student_id)
+            .options(
+                joinedload(Grade.subject),
+                joinedload(Grade.exam_schedule).joinedload(ExamSchedule.exam)
+            )
+            .all()
+        )
+
         for g in grades:
+            exam = g.exam_schedule.exam if g.exam_schedule else None
             writer.writerow([
                 f"{s.first_name} {s.last_name}",
-                g.subject.name,
-                g.score,
-                get_kcse_grade(g.score),
-                g.exam.name,
-                g.term,
-                g.year
+                g.subject.name if g.subject else '',
+                g.marks,
+                get_kcse_grade(g.marks),
+                exam.name if exam else '',
+                exam.term if exam else '',
+                exam.year if exam else ''
             ])
 
-    wrapper.flush()
+    # Encode text to bytes
+    csv_bytes = text_stream.getvalue().encode('utf-8')
+    output = BytesIO(csv_bytes)
     output.seek(0)
 
     return Response(
