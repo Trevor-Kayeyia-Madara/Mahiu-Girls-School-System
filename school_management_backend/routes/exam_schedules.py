@@ -17,9 +17,13 @@ def get_exam_schedules(current_user):
     result = []
     for sched in schedules:
         assignment = sched.class_assignment
-        classroom = assignment.classroom
-        subject = assignment.subject
+        classroom = getattr(assignment, 'classroom', None)
+        subject = getattr(assignment, 'subject', None)
         exam = sched.exam
+
+        # Skip invalid or incomplete relationships
+        if not classroom or not subject:
+            continue
 
         students = Student.query.filter_by(class_id=classroom.class_id).all()
 
@@ -50,6 +54,7 @@ def get_exam_schedules(current_user):
         })
 
     return jsonify(result), 200
+
 
 # ✅ Create a new schedule
 @exam_schedules_bp.route('/', methods=['POST'])

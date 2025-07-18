@@ -80,6 +80,7 @@ def get_my_class_subjects(current_user):
         .all()
 
     result = [{
+        'id': a.id,
         'class_id': a.class_id,
         'class_name': a.classroom.class_name,
         'subject_id': a.subject_id,
