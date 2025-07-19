@@ -120,7 +120,7 @@ def update_exam_schedule(current_user, schedule_id):
 @exam_schedules_bp.route('/<int:schedule_id>', methods=['DELETE'])
 @token_required
 def delete_exam_schedule(current_user, schedule_id):
-    if current_user.role != 'admin':
+    if current_user.role != 'teacher':
         return jsonify({"error": "Unauthorized"}), 403
 
     schedule = ExamSchedule.query.get(schedule_id)
