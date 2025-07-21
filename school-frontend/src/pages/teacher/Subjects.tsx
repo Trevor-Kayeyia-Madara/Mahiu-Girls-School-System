@@ -15,18 +15,19 @@ interface AssignedSubject {
 
 export default function TeacherSubjects() {
   const [subjects, setSubjects] = useState<Subject[]>([]);
-  const [selectedSubjects, setSelectedSubjects] = useState<number[]>([]);
   const [assignedSubjects, setAssignedSubjects] = useState<AssignedSubject[]>([]);
+  const [selectedSubjects, setSelectedSubjects] = useState<number[]>([]);
+  const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState<string>('');
 
   const token = localStorage.getItem('token');
+  const config = { headers: { Authorization: `Bearer ${token}` } };
 
-  const config = {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  };
+  useEffect(() => {
+    fetchSubjects();
+    fetchAssigned();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const fetchSubjects = async () => {
     try {
@@ -46,12 +47,6 @@ export default function TeacherSubjects() {
     }
   };
 
-  useEffect(() => {
-    fetchSubjects();
-    fetchAssigned();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   const handleCheckboxChange = (subjectId: number) => {
     setSelectedSubjects((prev) =>
       prev.includes(subjectId)
@@ -66,89 +61,98 @@ export default function TeacherSubjects() {
 
     setLoading(true);
     setMessage('');
+
     try {
       await Promise.all(
         selectedSubjects.map((subjectId) =>
-          axios.post(
-            `${API_BASE}/teacher-subjects`,
-            { subject_id: subjectId },
-            config // ✅ FIXED: Authorization header added
-          )
+          axios.post(`${API_BASE}/teacher-subjects`, { subject_id: subjectId }, config)
         )
       );
 
       await fetchAssigned();
       setSelectedSubjects([]);
-      setMessage('Subjects assigned successfully.');
+      setMessage('✅ Subjects assigned successfully.');
     } catch (err) {
       console.error('Error assigning subjects', err);
-      setMessage('Failed to assign subjects.');
+      setMessage('❌ Failed to assign subjects.');
     } finally {
       setLoading(false);
     }
   };
 
   const handleDelete = async (subjectId: number) => {
-    if (!window.confirm('Are you sure you want to unassign this subject?')) return;
+    if (!confirm('Are you sure you want to unassign this subject?')) return;
 
     try {
       await axios.delete(`${API_BASE}/teacher-subjects/${subjectId}`, config);
       await fetchAssigned();
-      setMessage('Subject unassigned successfully.');
+      setMessage('🗑️ Subject unassigned successfully.');
     } catch (err) {
       console.error('Error deleting subject', err);
-      setMessage('Failed to delete subject.');
+      setMessage('❌ Failed to delete subject.');
     }
   };
 
   return (
-    <div className="max-w-xl mx-auto p-6 bg-white shadow rounded-xl mt-10">
-      <h2 className="text-2xl font-bold mb-4">Assign Subjects You Teach</h2>
+    <div className="max-w-2xl mx-auto px-6 py-8 bg-white shadow-md rounded-xl">
+      <h1 className="text-2xl font-bold text-blue-800 mb-4">🧑‍🏫 Manage Your Subjects</h1>
 
-      {message && <div className="text-sm text-green-600 mb-4">{message}</div>}
+      {message && <div className="mb-4 text-sm text-green-700">{message}</div>}
 
       <form onSubmit={handleSubmit}>
-        <div className="space-y-2">
-          {subjects.map((subject) => (
-            <label key={subject.subject_id} className="block">
-              <input
-                type="checkbox"
-                checked={selectedSubjects.includes(subject.subject_id)}
-                onChange={() => handleCheckboxChange(subject.subject_id)}
-                className="mr-2"
-              />
-              {subject.name}
-            </label>
-          ))}
-        </div>
+        <fieldset className="space-y-3 mb-4">
+          <legend className="text-lg font-semibold text-gray-700 mb-2">
+            Select Subjects to Teach
+          </legend>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {subjects.map((subject) => (
+              <label key={subject.subject_id} className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  checked={selectedSubjects.includes(subject.subject_id)}
+                  onChange={() => handleCheckboxChange(subject.subject_id)}
+                  className="form-checkbox text-blue-600"
+                />
+                <span className="text-gray-700">{subject.name}</span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
 
         <button
           type="submit"
           disabled={loading}
-          className="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          className={`mt-2 px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 transition ${
+            loading ? 'opacity-50 cursor-not-allowed' : ''
+          }`}
         >
-          {loading ? 'Saving...' : 'Save Subjects'}
+          {loading ? 'Saving...' : '💾 Save Subjects'}
         </button>
       </form>
 
-      <div className="mt-6">
-        <h3 className="text-lg font-semibold mb-2">Already Assigned:</h3>
-        <ul className="space-y-2">
-          {assignedSubjects.map((s) => (
-            <li
-              key={s.subject_id}
-              className="flex justify-between items-center bg-gray-100 px-3 py-2 rounded"
-            >
-              <span>{s.subject_name}</span>
-              <button
-                onClick={() => handleDelete(s.subject_id)}
-                className="text-red-500 hover:underline text-sm"
+      {/* Already Assigned */}
+      <div className="mt-8">
+        <h2 className="text-lg font-semibold text-gray-800 mb-3">📋 Assigned Subjects</h2>
+        {assignedSubjects.length === 0 ? (
+          <p className="text-sm text-gray-500">You have not been assigned to any subjects yet.</p>
+        ) : (
+          <ul className="space-y-2">
+            {assignedSubjects.map((subject) => (
+              <li
+                key={subject.subject_id}
+                className="flex justify-between items-center bg-gray-100 p-2 rounded"
               >
-                Remove
-              </button>
-            </li>
-          ))}
-        </ul>
+                <span className="text-gray-800">{subject.subject_name}</span>
+                <button
+                  onClick={() => handleDelete(subject.subject_id)}
+                  className="text-sm text-red-600 hover:underline"
+                >
+                  Remove
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
     </div>
   );

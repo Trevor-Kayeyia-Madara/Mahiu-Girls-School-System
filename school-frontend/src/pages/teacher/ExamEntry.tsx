@@ -176,43 +176,45 @@ export default function ExamSchedulesPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-4">📚 Exam Schedules</h1>
+    <div className="max-w-5xl mx-auto px-6 py-8">
+      <h1 className="text-3xl font-bold text-blue-800 mb-6">🗓 Exam Schedules & Grades</h1>
 
-      {/* Create Form */}
-      <div className="bg-white p-4 rounded shadow mb-6">
-        <h2 className="font-semibold text-lg mb-3">➕ Create New Schedule</h2>
+      {/* Create Schedule */}
+      <div className="bg-white p-5 rounded shadow mb-8">
+        <h2 className="text-xl font-semibold mb-4">➕ Create New Exam Schedule</h2>
 
-        <div className="mb-3">
-          <label className="block mb-1 font-medium">Select Exam</label>
-          <select
-            className="w-full border rounded p-2"
-            value={selectedExamId ?? ''}
-            onChange={(e) => setSelectedExamId(e.target.value ? Number(e.target.value) : null)}
-          >
-            <option value="">-- Choose Exam --</option>
-            {exams.map((exam) => (
-              <option key={exam.exam_id} value={exam.exam_id}>
-                {exam.name} ({exam.term} {exam.year})
-              </option>
-            ))}
-          </select>
-        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div>
+            <label className="block font-medium mb-1">Exam</label>
+            <select
+              className="w-full border px-3 py-2 rounded"
+              value={selectedExamId ?? ''}
+              onChange={(e) => setSelectedExamId(e.target.value ? Number(e.target.value) : null)}
+            >
+              <option value="">-- Select Exam --</option>
+              {exams.map((exam) => (
+                <option key={exam.exam_id} value={exam.exam_id}>
+                  {exam.name} ({exam.term} {exam.year})
+                </option>
+              ))}
+            </select>
+          </div>
 
-        <div className="mb-3">
-          <label className="block mb-1 font-medium">Select Class Assignment</label>
-          <select
-            className="w-full border rounded p-2"
-            value={selectedAssignmentId ?? ''}
-            onChange={(e) => setSelectedAssignmentId(e.target.value ? Number(e.target.value) : null)}
-          >
-            <option value="">-- Choose Assignment --</option>
-            {assignments.map((a) => (
-              <option key={a.id} value={a.id}>
-                {a.class_name} - {a.subject_name}
-              </option>
-            ))}
-          </select>
+          <div>
+            <label className="block font-medium mb-1">Class Assignment</label>
+            <select
+              className="w-full border px-3 py-2 rounded"
+              value={selectedAssignmentId ?? ''}
+              onChange={(e) => setSelectedAssignmentId(e.target.value ? Number(e.target.value) : null)}
+            >
+              <option value="">-- Select Class + Subject --</option>
+              {assignments.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.class_name} - {a.subject_name}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
 
         <button
@@ -224,27 +226,25 @@ export default function ExamSchedulesPage() {
         </button>
       </div>
 
-      {/* List */}
-      <div className="bg-white p-4 rounded shadow">
-        <h2 className="text-lg font-semibold mb-4">📋 All Schedules</h2>
+      {/* Schedule List */}
+      <div className="bg-white p-5 rounded shadow">
+        <h2 className="text-xl font-semibold mb-4">📋 All Exam Schedules</h2>
 
         {schedules.length === 0 ? (
           <p className="text-gray-500">No schedules created yet.</p>
         ) : (
           schedules.map((s) => (
-            <div key={s.id} className="border-b py-3">
+            <div key={s.id} className="border-b py-4">
               <div className="flex justify-between items-center">
                 <div>
-                  <strong>{s.exam.name}</strong> — {s.class_assignment.classroom.class_name} (
+                  <strong>{s.exam.name}</strong> – {s.class_assignment.classroom.class_name} (
                   {s.class_assignment.subject.name})
                 </div>
                 <div className="space-x-2">
                   <button
                     onClick={() => {
                       setEditingId(null)
-                      setOpenGradesId((prev) =>
-                        prev === s.id ? null : s.id
-                      )
+                      setOpenGradesId((prev) => (prev === s.id ? null : s.id))
                       setGradeInputs(
                         s.class_assignment.students.map((stu) => ({
                           student_id: stu.student_id,
@@ -261,28 +261,28 @@ export default function ExamSchedulesPage() {
                     onClick={() => handleEdit(s)}
                     className="text-blue-600 hover:underline"
                   >
-                    Edit
+                    ✏️ Edit
                   </button>
                   <button
                     onClick={() => handleDelete(s.id)}
                     className="text-red-600 hover:underline"
                   >
-                    Delete
+                    🗑 Delete
                   </button>
                 </div>
               </div>
 
-              {/* Edit Form */}
+              {/* Edit Section */}
               {editingId === s.id && (
-                <div className="mt-2 bg-gray-50 p-3 rounded">
-                  <div className="mb-2">
-                    <label className="block text-sm">Edit Exam</label>
+                <div className="mt-3 p-3 bg-gray-100 rounded space-y-2">
+                  <div>
+                    <label className="block text-sm mb-1">Exam</label>
                     <select
-                      className="w-full border rounded p-2"
+                      className="w-full border px-3 py-1 rounded"
                       value={editExamId ?? ''}
-                      onChange={(e) => setEditExamId(e.target.value ? Number(e.target.value) : null)}
+                      onChange={(e) => setEditExamId(Number(e.target.value))}
                     >
-                      <option value="">-- Choose Exam --</option>
+                      <option value="">-- Select Exam --</option>
                       {exams.map((exam) => (
                         <option key={exam.exam_id} value={exam.exam_id}>
                           {exam.name} ({exam.term} {exam.year})
@@ -290,15 +290,14 @@ export default function ExamSchedulesPage() {
                       ))}
                     </select>
                   </div>
-
-                  <div className="mb-2">
-                    <label className="block text-sm">Edit Assignment</label>
+                  <div>
+                    <label className="block text-sm mb-1">Assignment</label>
                     <select
-                      className="w-full border rounded p-2"
+                      className="w-full border px-3 py-1 rounded"
                       value={editAssignmentId ?? ''}
-                      onChange={(e) => setEditAssignmentId(e.target.value ? Number(e.target.value) : null)}
+                      onChange={(e) => setEditAssignmentId(Number(e.target.value))}
                     >
-                      <option value="">-- Choose Assignment --</option>
+                      <option value="">-- Select Assignment --</option>
                       {assignments.map((a) => (
                         <option key={a.id} value={a.id}>
                           {a.class_name} - {a.subject_name}
@@ -306,13 +305,12 @@ export default function ExamSchedulesPage() {
                       ))}
                     </select>
                   </div>
-
                   <div className="space-x-2">
                     <button
                       onClick={handleSubmitEdit}
                       className="bg-green-600 text-white px-3 py-1 rounded"
                     >
-                      💾 Save
+                      ✅ Save
                     </button>
                     <button
                       onClick={() => setEditingId(null)}
@@ -324,12 +322,12 @@ export default function ExamSchedulesPage() {
                 </div>
               )}
 
-              {/* Grade Entry */}
+              {/* Grade Entry Section */}
               {openGradesId === s.id && (
-                <div className="mt-3 bg-gray-100 p-4 rounded">
-                  <h3 className="text-md font-semibold mb-2">📝 Enter Grades</h3>
+                <div className="mt-3 bg-gray-50 p-4 rounded">
+                  <h3 className="font-semibold mb-3">📝 Enter Grades</h3>
                   {gradeInputs.length === 0 ? (
-                    <p className="text-gray-500">No students found in this class.</p>
+                    <p className="text-gray-500">No students found for this class.</p>
                   ) : (
                     <div className="space-y-2">
                       {gradeInputs.map((g, idx) => (
@@ -337,7 +335,7 @@ export default function ExamSchedulesPage() {
                           <div className="w-1/2">{g.full_name}</div>
                           <input
                             type="number"
-                            className="w-24 border rounded p-1"
+                            className="w-24 border px-2 py-1 rounded"
                             placeholder="Marks"
                             value={g.marks}
                             onChange={(e) => {
@@ -350,7 +348,7 @@ export default function ExamSchedulesPage() {
                       ))}
                       <button
                         onClick={() => handleSubmitGrades(s.id)}
-                        className="mt-2 bg-blue-600 text-white px-3 py-1 rounded"
+                        className="mt-3 bg-blue-600 text-white px-3 py-2 rounded"
                       >
                         💾 Submit Grades
                       </button>

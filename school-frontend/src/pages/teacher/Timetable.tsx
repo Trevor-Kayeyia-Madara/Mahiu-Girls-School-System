@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import axios from 'axios'
 import { useAuth } from '../../contexts/AuthContext'
+
 interface TimetableEntry {
   id: number
   class: string
@@ -15,57 +16,64 @@ export default function TeacherTimetable() {
   const [loading, setLoading] = useState(true)
   const { user } = useAuth()
 
-useEffect(() => {
-  if (user?.role !== 'teacher') return;
+  useEffect(() => {
+    if (user?.role !== 'teacher') return
 
-  const fetchTimetable = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const res = await axios.get(
-        `http://localhost:5001/api/v1/timetable/me`, // ✅ new secured endpoint
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      setEntries(res.data);
-    } catch (err) {
-      console.error('Failed to fetch timetable', err);
-    } finally {
-      setLoading(false);
+    const fetchTimetable = async () => {
+      try {
+        const token = localStorage.getItem('token')
+        const res = await axios.get(
+          'http://localhost:5001/api/v1/timetable/me',
+          { headers: { Authorization: `Bearer ${token}` } }
+        )
+        setEntries(res.data)
+      } catch (err) {
+        console.error('Failed to fetch timetable', err)
+      } finally {
+        setLoading(false)
+      }
     }
-  };
 
-  fetchTimetable();
-}, [user?.role]);
+    fetchTimetable()
+  }, [user?.role])
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold mb-4">🗓 My Timetable</h1>
+    <div className="p-6">
+      <h1 className="text-3xl font-bold text-blue-800 mb-6">🗓 My Teaching Timetable</h1>
+
       {loading ? (
-        <p>Loading...</p>
+        <div className="flex justify-center items-center h-40">
+          <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+        </div>
       ) : entries.length === 0 ? (
-        <p>No entries found.</p>
+        <div className="text-center text-gray-500 py-12">
+          <p className="text-lg">No timetable entries found.</p>
+        </div>
       ) : (
-        <table className="w-full border table-auto shadow bg-white">
-          <thead className="bg-gray-100">
-            <tr>
-              <th className="text-left p-2">Day</th>
-              <th className="text-left p-2">Start</th>
-              <th className="text-left p-2">End</th>
-              <th className="text-left p-2">Subject</th>
-              <th className="text-left p-2">Class</th>
-            </tr>
-          </thead>
-          <tbody>
-            {entries.map((e) => (
-              <tr key={e.id} className="border-t">
-                <td className="p-2">{e.day}</td>
-                <td className="p-2">{e.start_time}</td>
-                <td className="p-2">{e.end_time}</td>
-                <td className="p-2">{e.subject}</td>
-                <td className="p-2">{e.class}</td>
+        <div className="overflow-x-auto">
+          <table className="min-w-full bg-white shadow-md rounded-md overflow-hidden">
+            <thead className="bg-blue-600 text-white">
+              <tr>
+                <th className="px-4 py-3 text-left text-sm">📅 Day</th>
+                <th className="px-4 py-3 text-left text-sm">⏰ Start</th>
+                <th className="px-4 py-3 text-left text-sm">🕒 End</th>
+                <th className="px-4 py-3 text-left text-sm">📘 Subject</th>
+                <th className="px-4 py-3 text-left text-sm">🏫 Class</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-gray-200">
+              {entries.map((e) => (
+                <tr key={e.id} className="hover:bg-gray-50">
+                  <td className="px-4 py-2">{e.day}</td>
+                  <td className="px-4 py-2">{e.start_time}</td>
+                  <td className="px-4 py-2">{e.end_time}</td>
+                  <td className="px-4 py-2 font-medium text-blue-700">{e.subject}</td>
+                  <td className="px-4 py-2">{e.class}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   )
