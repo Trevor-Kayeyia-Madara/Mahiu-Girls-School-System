@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react'
 import axios from 'axios'
+import {
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid
+} from 'recharts'
 
 interface ExamSchedule {
   id: number
@@ -68,26 +71,41 @@ export default function SummaryBySchedule() {
       </button>
 
       {summary.length > 0 ? (
-        <table className="w-full bg-white shadow table-auto rounded overflow-x-auto">
-          <thead className="bg-gray-100">
-            <tr>
-              <th className="p-2 text-left">#</th>
-              <th className="p-2 text-left">Student</th>
-              <th className="p-2 text-left">Marks</th>
-              <th className="p-2 text-left">KCSE Grade</th>
-            </tr>
-          </thead>
-          <tbody>
-            {summary.map((row, i) => (
-              <tr key={row.student_id} className="border-t">
-                <td className="p-2">{i + 1}</td>
-                <td className="p-2">{row.student_name}</td>
-                <td className="p-2 font-semibold">{row.marks}</td>
-                <td className="p-2">{row.kcse}</td>
+        <>
+          <table className="w-full bg-white shadow table-auto rounded mb-8">
+            <thead className="bg-gray-100">
+              <tr>
+                <th className="p-2 text-left">#</th>
+                <th className="p-2 text-left">Student</th>
+                <th className="p-2 text-left">Marks</th>
+                <th className="p-2 text-left">KCSE Grade</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {summary.map((row, i) => (
+                <tr key={row.student_id} className="border-t">
+                  <td className="p-2">{i + 1}</td>
+                  <td className="p-2">{row.student_name}</td>
+                  <td className="p-2 font-semibold">{row.marks}</td>
+                  <td className="p-2">{row.kcse}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          <h2 className="text-lg font-semibold mb-2">📊 Performance Chart</h2>
+          <div style={{ width: '100%', height: 400 }}>
+            <ResponsiveContainer>
+              <BarChart data={summary}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="student_name" tick={{ fontSize: 12 }} />
+                <YAxis />
+                <Tooltip />
+                <Bar dataKey="marks" fill="#4f46e5" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </>
       ) : (
         <p className="text-gray-600">No summary data loaded yet.</p>
       )}
