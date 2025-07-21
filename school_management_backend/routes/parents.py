@@ -116,3 +116,23 @@ def delete_parent(current_user, parent_id):
     db.session.delete(user)
     db.session.commit()
     return jsonify({'message': 'Parent deleted'}), 200
+
+# GET /parents/me/students
+@parent_bp.route('/me/students', methods=['GET'])
+@token_required
+def get_my_children(current_user):
+    if current_user.role != 'parent':
+        return jsonify({'error': 'Unauthorized'}), 403
+
+    parent = Parent.query.filter_by(user_id=current_user.user_id).first()
+    if not parent:
+        return jsonify({'error': 'Parent profile not found'}), 404
+
+    students = [{
+        'student_id': s.student_id,
+        'first_name': s.first_name,
+        'last_name': s.last_name,
+        'class_name': s.classroom.class_name if s.classroom else 'N/A'
+    } for s in parent.students]
+
+    return jsonify(students), 200

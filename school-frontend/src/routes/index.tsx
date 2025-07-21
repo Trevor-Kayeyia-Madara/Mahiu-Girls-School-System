@@ -20,6 +20,7 @@ import TeacherExamEntry from '../pages/teacher/ExamEntry'
 import OverallGradesSummary from '../pages/teacher/OverallGradesSummary'
 import TeacherSubjects from '../pages/teacher/Subjects'
 import StudentReportCard from '../pages/teacher/Reports'
+import ParentDashboard from '../pages/parents/Dashboard'
 
 
 const router = createBrowserRouter([
@@ -66,6 +67,13 @@ const router = createBrowserRouter([
           // Placeholder: Add more admin children routes here later
         ]
       }
+    ]
+  },
+  {
+    path: '/parent',
+    element: <ProtectedRoute allowedRoles={['parent']} />,
+    children: [
+      {index: true, element: <ParentDashboard />}
     ]
   },
   {
