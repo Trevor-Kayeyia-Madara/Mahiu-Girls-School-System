@@ -151,3 +151,36 @@ def update_grade(current_user, grade_id):
 
     db.session.commit()
     return jsonify({'message': 'Grade updated'}), 200
+
+#Summary
+@grade_bp.route('/summary/schedule/<int:exam_schedule_id>', methods=['GET'])
+@token_required
+def summary_by_exam_schedule(current_user, exam_schedule_id):
+    if current_user.role not in ['teacher', 'admin']:
+        return jsonify({'error': 'Unauthorized'}), 403
+
+    schedule = ExamSchedule.query.get_or_404(exam_schedule_id)
+    class_assignment = schedule.class_assignment
+    subject_id = class_assignment.subject_id
+    classroom = class_assignment.classroom
+    students = classroom.students if classroom else []
+
+    grades = Grade.query.filter_by(
+        exam_schedule_id=exam_schedule_id,
+        subject_id=subject_id
+    ).all()
+
+    student_map = {s.student_id: f"{s.first_name} {s.last_name}" for s in students}
+    grade_map = {g.student_id: g.marks for g in grades}
+
+    result = []
+    for student_id, full_name in student_map.items():
+        marks = grade_map.get(student_id, 0)
+        result.append({
+            'student_id': student_id,
+            'student_name': full_name,
+            'marks': marks,
+            'kcse': get_kcse_grade(marks)
+        })
+
+    return jsonify(result), 200
