@@ -8,11 +8,8 @@ import StudentReportPDF from '../../components/pdf/StudentReportPDF'
 const API = 'http://localhost:5001/api/v1'
 
 interface Assignment {
-  id: number
   class_id: number
   class_name: string
-  subject_id: number
-  subject_name: string
 }
 
 interface Student {
@@ -24,10 +21,8 @@ interface Student {
 export default function StudentReportCardView() {
   const [assignments, setAssignments] = useState<Assignment[]>([])
   const [students, setStudents] = useState<Student[]>([])
-
   const [selectedClassId, setSelectedClassId] = useState<number | null>(null)
   const [selectedStudentId, setSelectedStudentId] = useState<number | null>(null)
-
   const [report, setReport] = useState<any | null>(null)
   const [loading, setLoading] = useState(false)
 
@@ -36,17 +31,16 @@ export default function StudentReportCardView() {
   const token = localStorage.getItem('token')
   const headers = { Authorization: `Bearer ${token}` }
 
-  // Fetch assignments on mount
+  // Fetch teacher's class assignments
   useEffect(() => {
     axios.get(`${API}/assignments/me`, { headers })
       .then(res => setAssignments(res.data))
       .catch(() => alert('❌ Failed to fetch class assignments'))
   }, [])
 
-  // Fetch students when class is selected
+  // Fetch students in selected class
   useEffect(() => {
     if (!selectedClassId) return
-
     axios.get(`${API}/students/class/${selectedClassId}`, { headers })
       .then(res => setStudents(res.data))
       .catch(() => alert('❌ Failed to fetch students'))
@@ -55,7 +49,6 @@ export default function StudentReportCardView() {
   const fetchReport = async () => {
     if (!selectedStudentId) return
     setLoading(true)
-
     try {
       const res = await axios.get(`${API}/students/${selectedStudentId}/report-card`, {
         headers,
@@ -71,7 +64,7 @@ export default function StudentReportCardView() {
 
   return (
     <div className="max-w-4xl mx-auto p-6 bg-white shadow rounded">
-      <h1 className="text-2xl font-bold mb-6 text-blue-700">📘 Generate Student Report Card</h1>
+      <h1 className="text-2xl font-bold mb-6 text-blue-700">📘 Student Report Card</h1>
 
       {/* Class Dropdown */}
       <div className="mb-4">
@@ -86,7 +79,7 @@ export default function StudentReportCardView() {
           }}
         >
           <option value="">-- Choose Class --</option>
-          {assignments.map(a => (
+          {assignments.map((a) => (
             <option key={a.class_id} value={a.class_id}>
               {a.class_name}
             </option>
@@ -107,7 +100,7 @@ export default function StudentReportCardView() {
             }}
           >
             <option value="">-- Choose Student --</option>
-            {students.map(s => (
+            {students.map((s) => (
               <option key={s.student_id} value={s.student_id}>
                 {s.first_name} {s.last_name}
               </option>
@@ -116,7 +109,7 @@ export default function StudentReportCardView() {
         </div>
       )}
 
-      {/* Fetch Report Button */}
+      {/* Load Report Button */}
       {selectedStudentId && (
         <button
           onClick={fetchReport}
@@ -126,15 +119,15 @@ export default function StudentReportCardView() {
         </button>
       )}
 
-      {/* Report Section */}
+      {/* Report Display */}
       {loading && <p className="mt-4 text-gray-500">Loading report...</p>}
       {!loading && report && (
         <div className="mt-6 border-t pt-6">
-          <h2 className="text-xl font-semibold mb-2 text-gray-800">
+          <h2 className="text-xl font-semibold mb-4 text-gray-800">
             {report.student_name}'s Report
           </h2>
 
-          <div className="grid md:grid-cols-2 text-sm gap-4">
+          <div className="grid md:grid-cols-2 text-sm gap-4 mb-4">
             <div>
               <p><strong>Class:</strong> {report.class_name}</p>
               <p><strong>Term:</strong> {report.term}</p>
@@ -144,19 +137,18 @@ export default function StudentReportCardView() {
               <p><strong>Mean Score:</strong> {report.mean_score}</p>
               <p><strong>Grade:</strong> {report.kcse_grade}</p>
               <p><strong>Position:</strong> #{report.position}</p>
-              <p><strong>Class Avg:</strong> {report.class_average}</p>
+              <p><strong>Class Average:</strong> {report.class_average}</p>
             </div>
           </div>
 
-          <div className="mt-4">
-            <PDFDownloadLink
-              document={<StudentReportPDF report={report} />}
-              fileName={`${report.student_name}_Report.pdf`}
-              className="inline-block bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
-            >
-              ⬇️ Download PDF Report
-            </PDFDownloadLink>
-          </div>
+          {/* Download Button */}
+          <PDFDownloadLink
+            document={<StudentReportPDF report={report} />}
+            fileName={`${report.student_name.replace(/\s/g, '_')}_Report.pdf`}
+            className="inline-block bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+          >
+            ⬇️ Download PDF Report
+          </PDFDownloadLink>
         </div>
       )}
     </div>
