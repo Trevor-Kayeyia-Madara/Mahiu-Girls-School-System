@@ -21,6 +21,7 @@ import OverallGradesSummary from '../pages/teacher/OverallGradesSummary'
 import TeacherSubjects from '../pages/teacher/Subjects'
 import StudentReportCard from '../pages/teacher/Reports'
 import ParentDashboard from '../pages/parents/Dashboard'
+import ParentLayout from '../layouts/ParentLayout'
 
 
 const router = createBrowserRouter([
@@ -73,7 +74,12 @@ const router = createBrowserRouter([
     path: '/parent',
     element: <ProtectedRoute allowedRoles={['parent']} />,
     children: [
-      {index: true, element: <ParentDashboard />}
+      {
+        element: <ParentLayout  />,  
+        children: [
+          { index: true, element: <ParentDashboard /> },
+        ]
+      }
     ]
   },
   {
