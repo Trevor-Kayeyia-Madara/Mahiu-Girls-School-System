@@ -1,7 +1,7 @@
 # routes/students.py
 from flask import Blueprint, request, jsonify
 from app import db
-from models import Student, Classroom, Parent
+from models import Student, Classroom, Parent, Exam
 from utils.auth_utils import token_required
 from utils.grade_utils import get_kcse_grade
 from datetime import datetime
@@ -105,12 +105,11 @@ def delete_student(current_user, student_id):
     db.session.commit()
     return jsonify({'message': 'Student deleted'}), 200
 
-# routes/students.py
 
 @student_bp.route('/<int:student_id>/report-card', methods=['GET'])
 @token_required
 def get_student_report_card(current_user, student_id):
-    from models import Grade, Subject, ExamSchedule
+    from models import Grade, Subject, ExamSchedule, Exam
     from sqlalchemy import func
     from utils.grade_utils import get_kcse_grade
 
@@ -126,23 +125,24 @@ def get_student_report_card(current_user, student_id):
     if not classroom:
         return jsonify({'error': 'Student has no class assigned'}), 400
 
-    # 📊 Get classmates and their means
+    # 📊 Get classmates and calculate their mean scores
     classmates = Student.query.filter_by(class_id=classroom.class_id).all()
     student_means = []
 
     for s in classmates:
         grades = (
-            db.session.query(Grade, ExamSchedule)
-            .join(ExamSchedule, Grade.exam_schedule_id == ExamSchedule.exam_schedule_id)
+            db.session.query(Grade, ExamSchedule, Exam)
+            .join(ExamSchedule, Grade.exam_schedule_id == ExamSchedule.id)
+            .join(Exam, Exam.exam_id == ExamSchedule.exam_id)
             .filter(
                 Grade.student_id == s.student_id,
-                ExamSchedule.term == term,
-                ExamSchedule.year == year
+                Exam.term == term,
+                Exam.year == year
             )
             .all()
         )
-        scores = [grade.score for grade, _ in grades]
-        avg = sum(scores) / len(scores) if scores else 0
+        marks = [grade.marks for grade, _, _ in grades]
+        avg = sum(marks) / len(marks) if marks else 0
 
         student_means.append({
             'student_id': s.student_id,
@@ -158,32 +158,35 @@ def get_student_report_card(current_user, student_id):
 
     # 📚 Subject-wise breakdown
     grades = (
-        db.session.query(Grade, Subject, ExamSchedule)
+        db.session.query(Grade, Subject, ExamSchedule, Exam)
         .join(Subject, Grade.subject_id == Subject.subject_id)
-        .join(ExamSchedule, Grade.exam_schedule_id == ExamSchedule.exam_schedule_id)
+        .join(ExamSchedule, Grade.exam_schedule_id == ExamSchedule.id)
+        .join(Exam, Exam.exam_id == ExamSchedule.exam_id)
         .filter(
             Grade.student_id == student_id,
-            ExamSchedule.term == term,
-            ExamSchedule.year == year
+            Exam.term == term,
+            Exam.year == year
         )
         .all()
     )
 
     subjects = {}
     total_score = 0
-    for grade, subject, exam in grades:
-        name = subject.name
-        if name not in subjects:
-            subjects[name] = {
-                'subject_name': name,
+
+    for grade, subject, _, exam in grades:
+        subject_name = subject.name
+
+        if subject_name not in subjects:
+            subjects[subject_name] = {
+                'subject_name': subject_name,
                 'average_score': 0,
                 'kcse_grade': '',
                 'exams': []
             }
 
-        subjects[name]['exams'].append({
+        subjects[subject_name]['exams'].append({
             'exam': exam.name,
-            'score': grade.score,
+            'score': grade.marks,
             'term': exam.term,
             'year': exam.year
         })
