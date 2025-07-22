@@ -17,7 +17,7 @@ export default function ParentLayout() {
           👪 Parent Panel
         </div>
         <nav className="flex-1 p-4 space-y-2">
-          <Link to="/parent/dashboard" className="block hover:bg-blue-700 px-3 py-2 rounded">
+          <Link to="/parent" className="block hover:bg-blue-700 px-3 py-2 rounded">
             🏠 Dashboard
           </Link>
           <Link to="/parent/students" className="block hover:bg-blue-700 px-3 py-2 rounded">
