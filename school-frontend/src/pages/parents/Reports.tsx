@@ -1,16 +1,17 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-// src/pages/ParentReports.tsx
 import { useEffect, useState } from 'react'
 import axios from 'axios'
+import { saveAs } from 'file-saver'
 
 interface Student {
-  id: number
-  name: string
+  student_id: number
+  first_name: string
+  last_name: string
 }
 
 interface SubjectGrade {
   subject: string
-  score: number
+  marks: number
   grade: string
 }
 
@@ -29,9 +30,12 @@ export default function ParentReports() {
   const token = localStorage.getItem('token')
   const headers = { Authorization: `Bearer ${token}` }
 
+  // ✅ Fetch only the parent's children
   useEffect(() => {
-    axios.get('http://localhost:5001/api/v1/parents/me', { headers })
-      .then(res => setChildren(res.data.students))
+    axios.get('http://localhost:5001/api/v1/parents/me/students', { headers })
+      .then(res =>{
+         console.log('Children:', res.data)
+         setChildren(res.data)})
       .catch(err => console.error('Failed to fetch children', err))
   }, [])
 
@@ -45,21 +49,36 @@ export default function ParentReports() {
       })
   }
 
+  const exportReport = async (type: 'pdf' | 'csv') => {
+    if (!selectedStudentId) return
+    try {
+      const res = await axios.get(
+        `http://localhost:5001/api/v1/reports/export/student/${selectedStudentId}/${type}`,
+        { headers, responseType: 'blob' }
+      )
+      const child = children.find(c => c.student_id === selectedStudentId)
+      saveAs(res.data, `${child?.first_name}_${child?.last_name}_report.${type}`)
+    } catch (err) {
+      console.error(`Failed to export ${type.toUpperCase()}`, err)
+    }
+  }
+
   return (
     <div className="p-6">
       <h1 className="text-xl font-bold mb-4">📄 Student Report Card</h1>
 
       {/* Child Selector */}
       <div className="mb-4 max-w-sm">
-        <label className="block font-medium mb-1">Select Student</label>
+        <label className="block font-medium mb-1">Select Child</label>
         <select
           value={selectedStudentId}
           onChange={(e) => setSelectedStudentId(Number(e.target.value))}
           className="w-full p-2 border rounded"
         >
-          <option value="">-- Choose Student --</option>
+          <option value="">-- Choose Child --</option>
           {children.map(c => (
-            <option key={c.id} value={c.id}>{c.name}</option>
+            <option key={c.student_id} value={c.student_id}>
+              {c.first_name}{c.last_name}</option>
           ))}
         </select>
         <button
@@ -70,7 +89,7 @@ export default function ParentReports() {
         </button>
       </div>
 
-      {/* Report Section */}
+      {/* Report Viewer */}
       {report && (
         <div className="bg-white shadow rounded p-4">
           <h2 className="text-lg font-semibold mb-2">{report.student_name}</h2>
@@ -80,7 +99,7 @@ export default function ParentReports() {
             <thead className="bg-gray-100">
               <tr>
                 <th className="text-left p-2">Subject</th>
-                <th className="text-left p-2">Score</th>
+                <th className="text-left p-2">Marks</th>
                 <th className="text-left p-2">Grade</th>
               </tr>
             </thead>
@@ -88,15 +107,24 @@ export default function ParentReports() {
               {report.grades.map((g, i) => (
                 <tr key={i} className="border-t">
                   <td className="p-2">{g.subject}</td>
-                  <td className="p-2">{g.score}</td>
+                  <td className="p-2">{g.marks}</td>
                   <td className="p-2">{g.grade}</td>
                 </tr>
               ))}
             </tbody>
           </table>
 
-          <div className="text-right font-semibold">
-            Total Average: {report.average_score} ({report.grades.length > 0 ? report.grades[0].grade : 'N/A'})
+          <div className="text-right font-semibold mb-2">
+            Total Average: {report.average_score}
+          </div>
+
+          <div className="space-x-2">
+            <button onClick={() => exportReport('pdf')} className="bg-red-600 text-white px-3 py-1 rounded">
+              🧾 Download PDF
+            </button>
+            <button onClick={() => exportReport('csv')} className="bg-green-600 text-white px-3 py-1 rounded">
+              📄 Download CSV
+            </button>
           </div>
         </div>
       )}

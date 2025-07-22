@@ -12,4 +12,5 @@ class Student(db.Model):
     parent_id = db.Column(db.Integer, db.ForeignKey('parents.parent_id'))
     class_id = db.Column(db.Integer, db.ForeignKey('classrooms.class_id'))
 
-    
+    students = db.relationship('Student', back_populates='parent')
+

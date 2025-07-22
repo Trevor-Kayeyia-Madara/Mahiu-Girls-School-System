@@ -49,7 +49,7 @@ def student_report(current_user, student_id):
     student = Student.query.options(joinedload(Student.classroom)).get_or_404(student_id)
 
     # Access control: only admins or teachers allowed
-    if current_user.role not in ['admin', 'teacher']:
+    if current_user.role not in ['admin', 'teacher','parent']:
         return jsonify({'error': 'Access denied'}), 403
 
     # Get grades with subject and exam data
@@ -126,12 +126,12 @@ def class_report(current_user, class_id):
         'students': ranked
     }), 200
 
-
+#EXPORTS 
 @report_bp.route('/export/student/<int:student_id>/pdf', methods=['GET'])
 @token_required
 def export_student_pdf(current_user, student_id):
     student = Student.query.options(joinedload(Student.classroom)).get_or_404(student_id)
-    if current_user.role not in ['admin', 'teacher'] and current_user.user_id != getattr(student.user, 'user_id', None):
+    if current_user.role not in ['admin', 'teacher', 'parent'] and current_user.user_id != getattr(student.user, 'user_id', None):
         return jsonify({'error': 'Access denied'}), 403
 
     grades = Grade.query.filter_by(student_id=student_id).options(joinedload(Grade.subject), joinedload(Grade.exam_schedule)).all()
@@ -187,7 +187,7 @@ def export_student_pdf(current_user, student_id):
 @report_bp.route('/export/student/<int:student_id>/csv', methods=['GET'])
 @token_required
 def export_student_csv(current_user, student_id):
-    if current_user.role not in ['admin', 'teacher', 'student']:
+    if current_user.role not in ['admin', 'teacher', 'parent']:
         return jsonify({'error': 'Access denied'}), 403
 
     student = Student.query.get_or_404(student_id)
