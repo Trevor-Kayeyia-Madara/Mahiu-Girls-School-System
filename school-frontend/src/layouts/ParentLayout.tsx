@@ -20,9 +20,6 @@ export default function ParentLayout() {
           <Link to="/parent" className="block hover:bg-blue-700 px-3 py-2 rounded">
             🏠 Dashboard
           </Link>
-          <Link to="/parent/students" className="block hover:bg-blue-700 px-3 py-2 rounded">
-            📚 My Children
-          </Link>
           <Link to="/parent/reports" className="block hover:bg-blue-700 px-3 py-2 rounded">
             📈 Report Cards
           </Link>
