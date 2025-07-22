@@ -2,7 +2,7 @@
 import { Link, Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useState, useRef, useEffect } from 'react'
-import { LogOut, User, UserCircle } from 'lucide-react'
+import { LogOut, User, UserCircle, Settings } from 'lucide-react'
 import clsx from 'clsx'
 
 export default function AdminLayout() {
@@ -10,6 +10,7 @@ export default function AdminLayout() {
   const navigate = useNavigate()
   const location = useLocation()
   const [menuOpen, setMenuOpen] = useState(false)
+  const [showProfileModal, setShowProfileModal] = useState(false)
   const menuRef = useRef(null)
 
   useEffect(() => {
@@ -35,6 +36,7 @@ export default function AdminLayout() {
     { to: '/admin/timetable', label: 'Timetable', icon: '📅' },
     { to: '/admin/reports', label: 'Reports', icon: '📄' },
     { to: '/admin/overall', label: 'Overall Grades', icon: '📈' },
+    { to: '/admin/settings', label: 'Settings', icon: '⚙️' },
   ]
 
   const handleLogout = () => {
@@ -102,10 +104,18 @@ export default function AdminLayout() {
                 <ul className="py-1">
                   <li>
                     <button
-                      onClick={() => navigate('/admin/profile')}
+                      onClick={() => setShowProfileModal(true)}
                       className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     >
                       <User className="w-4 h-4 mr-2" /> Profile
+                    </button>
+                  </li>
+                  <li>
+                    <button
+                      onClick={() => navigate('/admin/settings')}
+                      className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      <Settings className="w-4 h-4 mr-2" /> Settings
                     </button>
                   </li>
                   <li>
@@ -121,6 +131,26 @@ export default function AdminLayout() {
             )}
           </div>
         </header>
+
+        {/* Profile Modal */}
+        {showProfileModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
+              <h2 className="text-xl font-bold mb-4">User Profile</h2>
+              <p><strong>Name:</strong> {user?.name}</p>
+              <p><strong>Email:</strong> {user?.email}</p>
+              <p><strong>Role:</strong> {user?.role}</p>
+              <div className="mt-6 text-right">
+                <button
+                  className="bg-gray-200 text-gray-700 px-4 py-2 rounded hover:bg-gray-300"
+                  onClick={() => setShowProfileModal(false)}
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Routed Content */}
         <section className="flex-1 overflow-y-auto p-6 bg-gray-50">
