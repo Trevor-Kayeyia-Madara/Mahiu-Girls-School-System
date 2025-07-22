@@ -30,36 +30,42 @@ export default function ParentReports() {
   const token = localStorage.getItem('token')
   const headers = { Authorization: `Bearer ${token}` }
 
-  // ✅ Fetch only the parent's children
+  // Fetch children (students)
   useEffect(() => {
     axios.get('http://localhost:5001/api/v1/parents/me/students', { headers })
-      .then(res =>{
-         console.log('Children:', res.data)
-         setChildren(res.data)})
-      .catch(err => console.error('Failed to fetch children', err))
+      .then(res => setChildren(res.data))
+      .catch(err => console.error('❌ Failed to fetch children:', err))
   }, [])
 
+  // Fetch report data
   const loadReport = () => {
     if (!selectedStudentId) return
     axios.get(`http://localhost:5001/api/v1/reports/student/${selectedStudentId}`, { headers })
       .then(res => setReport(res.data))
       .catch(err => {
-        console.error('Failed to load report', err)
+        console.error('❌ Failed to load report:', err)
         setReport(null)
       })
   }
 
+  // Export PDF or CSV
   const exportReport = async (type: 'pdf' | 'csv') => {
     if (!selectedStudentId) return
+
     try {
       const res = await axios.get(
         `http://localhost:5001/api/v1/reports/export/student/${selectedStudentId}/${type}`,
-        { headers }
+        {
+          headers,
+          responseType: 'blob', // ✅ critical fix
+        }
       )
+
       const child = children.find(c => c.student_id === selectedStudentId)
-      saveAs(res.data, `${child?.first_name}_${child?.last_name}_report.${type}`)
+      const fileName = `${child?.first_name}_${child?.last_name}_report.${type}`
+      saveAs(res.data, fileName)
     } catch (err) {
-      console.error(`Failed to export ${type.toUpperCase()}`, err)
+      console.error(`❌ Failed to export ${type.toUpperCase()}:`, err)
     }
   }
 
@@ -78,7 +84,8 @@ export default function ParentReports() {
           <option value="">-- Choose Child --</option>
           {children.map(c => (
             <option key={c.student_id} value={c.student_id}>
-              {c.first_name}{c.last_name}</option>
+              {c.first_name} {c.last_name}
+            </option>
           ))}
         </select>
         <button
