@@ -54,7 +54,7 @@ export default function ParentReports() {
     try {
       const res = await axios.get(
         `http://localhost:5001/api/v1/reports/export/student/${selectedStudentId}/${type}`,
-        { headers, responseType: 'blob' }
+        { headers }
       )
       const child = children.find(c => c.student_id === selectedStudentId)
       saveAs(res.data, `${child?.first_name}_${child?.last_name}_report.${type}`)

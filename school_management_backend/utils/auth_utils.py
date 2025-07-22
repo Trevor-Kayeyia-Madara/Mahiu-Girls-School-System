@@ -38,7 +38,6 @@ def token_required(f):
                 user.teacher_id = teacher.teacher_id  # 👈 FIX: attach teacher_id directly
             elif user.role == 'parent':
                 user.parent = Parent.query.filter_by(user_id=user.user_id).first()
-                user.parent_id = Parent.parent_id 
 
         except jwt.ExpiredSignatureError:
             return jsonify({'error': 'Token expired'}), 401
