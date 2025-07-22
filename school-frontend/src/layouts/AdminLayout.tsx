@@ -22,6 +22,7 @@ export default function AdminLayout() {
     { to: '/admin/grades', label: '📝 Grades' },
     { to: '/admin/timetable', label: '📅 Timetable' },
     { to: '/admin/reports', label: '📄 Reports' },
+    { to: '/admin/overall', label: '📄 Overall Grades' },
   ]
 
   return (

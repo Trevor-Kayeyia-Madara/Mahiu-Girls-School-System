@@ -92,47 +92,6 @@ def student_report(current_user, student_id):
 
 
 
-@report_bp.route('/class/<int:class_id>', methods=['GET'])
-@token_required
-def class_report(current_user, class_id):
-    if current_user.role not in ['admin', 'teacher']:
-        return jsonify({'error': 'Access denied'}), 403
-
-    classroom = Classroom.query.get_or_404(class_id)
-    students = Student.query.filter_by(class_id=class_id).all()
-
-    data = []
-
-    for student in students:
-        grades = Grade.query.filter_by(student_id=student.student_id).all()
-        if not grades:
-            continue
-
-        total = sum(g.marks for g in grades)
-        avg = round(total / len(grades), 2)
-        mean_grade = get_kcse_grade(avg)
-
-        data.append({
-            'student_id': student.student_id,
-            'student_name': f"{student.first_name} {student.last_name}",
-            'total_marks': total,
-            'average_score': avg,
-            'mean_grade': mean_grade
-        })
-
-    # Sort by total marks for position
-    ranked = sorted(data, key=lambda x: x['total_marks'], reverse=True)
-    for i, student in enumerate(ranked, start=1):
-        student['position'] = i
-
-    return jsonify({
-        'class_id': classroom.class_id,
-        'class_name': classroom.class_name,
-        'students': ranked
-    }), 200
-
-
-
 @report_bp.route('/export/student/<int:student_id>/pdf', methods=['GET'])
 @token_required
 def export_student_pdf(current_user, student_id):
@@ -340,3 +299,5 @@ def export_class_csv(current_user, class_id):
             "Content-Disposition": f"attachment; filename={classroom.class_name}_report.csv"
         }
     )
+    return jsonify(summary), 200
+    
