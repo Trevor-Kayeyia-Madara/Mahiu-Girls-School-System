@@ -299,5 +299,55 @@ def export_class_csv(current_user, class_id):
             "Content-Disposition": f"attachment; filename={classroom.class_name}_report.csv"
         }
     )
-    return jsonify(summary), 200
+    
+@report_bp.route('/overall-forms', methods=['GET', 'OPTIONS'])
+@token_required
+def overall_forms_report(current_user):
+    if current_user.role not in ['admin', 'teacher']:
+        return jsonify({'error': 'Access denied'}), 403
+
+    # Fetch all students with classrooms
+    students = Student.query.options(joinedload(Student.classroom)).all()
+
+    form_data = {}
+
+    for student in students:
+        class_name = student.classroom.class_name if student.classroom else ''
+        form_key = class_name.split(" ")[0] if class_name else 'Unknown'
+
+        grades = Grade.query.filter_by(student_id=student.student_id).all()
+        if not grades:
+            continue
+
+        mean_score = round(sum(g.marks for g in grades) / len(grades), 2)
+        grade = get_kcse_grade(mean_score)
+
+        student_summary = {
+            'student_id': student.student_id,
+            'student_name': f"{student.first_name} {student.last_name}",
+            'class_name': class_name,
+            'mean_score': mean_score,
+            'kcse_grade': grade
+        }
+
+        if form_key not in form_data:
+            form_data[form_key] = {
+                'student_count': 0,
+                'total_score': 0,
+                'grade_distribution': {},
+                'students': []
+            }
+
+        form_data[form_key]['student_count'] += 1
+        form_data[form_key]['total_score'] += mean_score
+        form_data[form_key]['grade_distribution'][grade] = form_data[form_key]['grade_distribution'].get(grade, 0) + 1
+        form_data[form_key]['students'].append(student_summary)
+
+    # Finalize average score per form
+    for form_key, data in form_data.items():
+        data['mean_score'] = round(data['total_score'] / data['student_count'], 2)
+        del data['total_score']
+
+    return jsonify(form_data), 200
+
     
