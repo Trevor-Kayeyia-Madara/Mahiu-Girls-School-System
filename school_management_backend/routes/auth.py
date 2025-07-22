@@ -18,7 +18,13 @@ def login():
         return jsonify({'error': 'Invalid credentials'}), 401
 
     token = generate_token(user)
-    return jsonify({'token': token, 'role': user.role, 'user_id': user.user_id}), 200
+    # ✅ Add 'name' to the response
+    return jsonify({
+        'token': token,
+        'role': user.role,
+        'user_id': user.user_id,
+        'name': user.name  # 👈 Add this line
+    }), 200
 
 
 # REGISTER
