@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import { useEffect, useState, useMemo } from 'react'
 import axios from 'axios'
 import { saveAs } from 'file-saver'
@@ -24,18 +25,20 @@ export default function AdminReports() {
   const token = localStorage.getItem('token')
   const headers = useMemo(() => ({ Authorization: `Bearer ${token}` }), [token])
 
+  // Fetch classrooms
   useEffect(() => {
     axios.get('http://localhost:5001/api/v1/classrooms', { headers })
       .then(res => setClasses(res.data || []))
       .catch(err => console.error('Error loading classes', err))
-  }, [headers])
+  }, [])
 
+  // Fetch students when class changes
   useEffect(() => {
     if (!selectedClassId) return
     axios.get(`http://localhost:5001/api/v1/students/class/${selectedClassId}`, { headers })
       .then(res => setStudents(res.data || []))
       .catch(err => console.error('Error loading students', err))
-  }, [selectedClassId, headers])
+  }, [selectedClassId])
 
   const handleExport = async (type: 'class' | 'student', format: 'pdf' | 'csv') => {
     const id = type === 'class' ? selectedClassId : selectedStudentId
@@ -94,7 +97,7 @@ export default function AdminReports() {
         )}
       </div>
 
-      {/* Student Section */}
+      {/* Student Selection */}
       {selectedClassId && (
         <div className="bg-gray-50 p-4 rounded shadow">
           <h2 className="text-lg font-semibold mb-2">🎓 Student Report</h2>
@@ -142,7 +145,7 @@ export default function AdminReports() {
         </div>
       )}
 
-      {/* Student Report Modal */}
+      {/* Modal */}
       {showStudentModal && selectedStudentId && (
         <StudentReportModal
           studentId={selectedStudentId}
