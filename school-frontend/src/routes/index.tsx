@@ -79,7 +79,7 @@ const router = createBrowserRouter([
         element: <ParentLayout  />,  
         children: [
           { index: true, element: <ParentDashboard /> },
-          {path: '/reports', element:<ParentReports />}
+          {path: 'reports', element:<ParentReports />}
         ]
       }
     ]
