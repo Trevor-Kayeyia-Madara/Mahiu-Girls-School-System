@@ -318,7 +318,6 @@ def overall_forms_report(current_user):
 
     return jsonify(form_data), 200
 
-# Rankings
 @report_bp.route('/school/rankings', methods=['GET'])
 @token_required
 def school_rankings(current_user):
@@ -329,28 +328,55 @@ def school_rankings(current_user):
     form_rankings = {}
 
     for form_level in forms:
+        # Get all classes under this form (e.g. Form 1R, 1G, etc.)
         classes = Classroom.query.filter(Classroom.class_name.startswith(form_level)).all()
-        student_data = []
+
+        form_students = []
+        class_means = {}
 
         for classroom in classes:
             students = Student.query.filter_by(class_id=classroom.class_id).all()
+            class_student_data = []
+
             for student in students:
                 grades = Grade.query.filter_by(student_id=student.student_id).all()
                 if not grades:
                     continue
-                avg = round(sum(g.marks for g in grades) / len(grades), 2)
-                student_data.append({
+
+                total_marks = sum(g.marks for g in grades)
+                avg = round(total_marks / len(grades), 2)
+
+                student_info = {
                     'student_id': student.student_id,
                     'student_name': f"{student.first_name} {student.last_name}",
                     'class_name': classroom.class_name,
+                    'total_marks': total_marks,
                     'average_score': avg,
                     'mean_grade': get_kcse_grade(avg)
-                })
+                }
+                form_students.append(student_info)
+                class_student_data.append(avg)
 
-        ranked = sorted(student_data, key=lambda d: d['average_score'], reverse=True)
+            # Class mean (if students exist)
+            if class_student_data:
+                class_mean = round(sum(class_student_data) / len(class_student_data), 2)
+                class_means[classroom.class_name] = class_mean
+
+        # Rank students by average score
+        ranked = sorted(form_students, key=lambda d: d['average_score'], reverse=True)
         for i, s in enumerate(ranked, 1):
             s['position'] = i
 
-        form_rankings[form_level] = ranked
+        # Form mean from all class means
+        form_mean = (
+            round(sum(class_means.values()) / len(class_means), 2)
+            if class_means else 0
+        )
+
+        form_rankings[form_level] = {
+            'form_mean': form_mean,
+            'class_means': class_means,
+            'students': ranked
+        }
 
     return jsonify(form_rankings), 200
