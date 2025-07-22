@@ -20,6 +20,7 @@ export default function AdminLayout() {
     { to: '/admin/classrooms', label: '🏫 Classrooms' },
     { to: '/admin/subjects', label: '📘 Subjects' },
     { to: '/admin/grades', label: '📝 Grades' },
+    { to: '/admin/rankings', label: '📝 Rankings' },
     { to: '/admin/timetable', label: '📅 Timetable' },
     { to: '/admin/reports', label: '📄 Reports' },
     { to: '/admin/overall', label: '📄 Overall Grades' },

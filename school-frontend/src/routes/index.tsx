@@ -24,6 +24,7 @@ import ParentDashboard from '../pages/parents/Dashboard'
 import ParentLayout from '../layouts/ParentLayout'
 import ParentReports from '../pages/parents/Reports'
 import AdminOverallReports from '../pages/admin/Overall'
+import OverallSchoolRankings from '../pages/admin/School'
 
 
 const router = createBrowserRouter([
@@ -48,6 +49,7 @@ const router = createBrowserRouter([
           {path:'grades', element: <AdminGrades />},
           {path:'timetable', element: <AdminTimetable />},
           {path:'reports', element: <AdminReports />},
+          {path: 'rankings', element: <OverallSchoolRankings />},
           {path:'overall', element: <AdminOverallReports />}
           // Placeholder: Add more admin children routes here later
         ]

@@ -318,4 +318,39 @@ def overall_forms_report(current_user):
 
     return jsonify(form_data), 200
 
-    
+# Rankings
+@report_bp.route('/school/rankings', methods=['GET'])
+@token_required
+def school_rankings(current_user):
+    if current_user.role not in ['admin', 'teacher']:
+        return jsonify({'error': 'Access denied'}), 403
+
+    forms = ['Form 1', 'Form 2', 'Form 3', 'Form 4']
+    form_rankings = {}
+
+    for form_level in forms:
+        classes = Classroom.query.filter(Classroom.class_name.startswith(form_level)).all()
+        student_data = []
+
+        for classroom in classes:
+            students = Student.query.filter_by(class_id=classroom.class_id).all()
+            for student in students:
+                grades = Grade.query.filter_by(student_id=student.student_id).all()
+                if not grades:
+                    continue
+                avg = round(sum(g.marks for g in grades) / len(grades), 2)
+                student_data.append({
+                    'student_id': student.student_id,
+                    'student_name': f"{student.first_name} {student.last_name}",
+                    'class_name': classroom.class_name,
+                    'average_score': avg,
+                    'mean_grade': get_kcse_grade(avg)
+                })
+
+        ranked = sorted(student_data, key=lambda d: d['average_score'], reverse=True)
+        for i, s in enumerate(ranked, 1):
+            s['position'] = i
+
+        form_rankings[form_level] = ranked
+
+    return jsonify(form_rankings), 200
