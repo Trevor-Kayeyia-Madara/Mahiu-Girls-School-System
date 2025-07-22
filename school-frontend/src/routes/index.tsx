@@ -22,6 +22,7 @@ import TeacherSubjects from '../pages/teacher/Subjects'
 import StudentReportCard from '../pages/teacher/Reports'
 import ParentDashboard from '../pages/parents/Dashboard'
 import ParentLayout from '../layouts/ParentLayout'
+import ParentReports from '../pages/parents/Reports'
 
 
 const router = createBrowserRouter([
@@ -78,6 +79,7 @@ const router = createBrowserRouter([
         element: <ParentLayout  />,  
         children: [
           { index: true, element: <ParentDashboard /> },
+          {path: '/reports', element:<ParentReports />}
         ]
       }
     ]
