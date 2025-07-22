@@ -100,23 +100,28 @@ def class_report(current_user, class_id):
 
     classroom = Classroom.query.get_or_404(class_id)
     students = Student.query.filter_by(class_id=class_id).all()
+
     data = []
 
-    for s in students:
-        grades = Grade.query.filter_by(student_id=s.student_id).all()
+    for student in students:
+        grades = Grade.query.filter_by(student_id=student.student_id).all()
         if not grades:
             continue
-        avg = round(sum(g.marks for g in grades) / len(grades), 2)
+
+        total = sum(g.marks for g in grades)
+        avg = round(total / len(grades), 2)
         mean_grade = get_kcse_grade(avg)
 
         data.append({
-            'student_id': s.student_id,
-            'student_name': f"{s.first_name} {s.last_name}",
+            'student_id': student.student_id,
+            'student_name': f"{student.first_name} {student.last_name}",
+            'total_marks': total,
             'average_score': avg,
             'mean_grade': mean_grade
         })
 
-    ranked = sorted(data, key=lambda d: d['average_score'], reverse=True)
+    # Sort by total marks for position
+    ranked = sorted(data, key=lambda x: x['total_marks'], reverse=True)
     for i, student in enumerate(ranked, start=1):
         student['position'] = i
 
@@ -125,6 +130,7 @@ def class_report(current_user, class_id):
         'class_name': classroom.class_name,
         'students': ranked
     }), 200
+
 
 
 @report_bp.route('/export/student/<int:student_id>/pdf', methods=['GET'])
