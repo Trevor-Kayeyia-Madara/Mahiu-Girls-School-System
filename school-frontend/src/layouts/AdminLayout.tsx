@@ -1,83 +1,129 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Link, Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { useState, useRef, useEffect } from 'react'
+import { LogOut, User, UserCircle } from 'lucide-react'
+import clsx from 'clsx'
 
 export default function AdminLayout() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
+  const [menuOpen, setMenuOpen] = useState(false)
+  const menuRef = useRef(null)
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !(menuRef.current as any).contains(e.target)) {
+        setMenuOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  const navItems = [
+    { to: '/admin', label: 'Dashboard', icon: '📊' },
+    { to: '/admin/users', label: 'Users', icon: '👤' },
+    { to: '/admin/students', label: 'Students', icon: '🎓' },
+    { to: '/admin/teachers', label: 'Teachers', icon: '🧑‍🏫' },
+    { to: '/admin/assignments', label: 'Classes', icon: '📚' },
+    { to: '/admin/classrooms', label: 'Classrooms', icon: '🏫' },
+    { to: '/admin/subjects', label: 'Subjects', icon: '📘' },
+    { to: '/admin/grades', label: 'Grades', icon: '📝' },
+    { to: '/admin/rankings', label: 'Rankings', icon: '🏆' },
+    { to: '/admin/timetable', label: 'Timetable', icon: '📅' },
+    { to: '/admin/reports', label: 'Reports', icon: '📄' },
+    { to: '/admin/overall', label: 'Overall Grades', icon: '📈' },
+  ]
 
   const handleLogout = () => {
     logout()
     navigate('/')
   }
 
-  const navItems = [
-    { to: '/admin', label: '📊 Dashboard' },
-    { to: '/admin/users', label: '👤 Users' },
-    { to: '/admin/students', label: '🎓 Students' },
-    { to: '/admin/teachers', label: '🧑‍🏫 Teachers' },
-    { to: '/admin/assignments', label: '📚 Classes' },
-    { to: '/admin/classrooms', label: '🏫 Classrooms' },
-    { to: '/admin/subjects', label: '📘 Subjects' },
-    { to: '/admin/grades', label: '📝 Grades' },
-    { to: '/admin/rankings', label: '📝 Rankings' },
-    { to: '/admin/timetable', label: '📅 Timetable' },
-    { to: '/admin/reports', label: '📄 Reports' },
-    { to: '/admin/overall', label: '📄 Overall Grades' },
-  ]
-
   return (
     <div className="flex h-screen bg-gray-100">
       {/* Sidebar */}
-      <aside className="w-64 bg-gray-900 text-white flex flex-col p-4 shadow-md">
-        <div className="mb-8">
-          <h2 className="text-2xl font-semibold tracking-wide">🎓 Admin Panel</h2>
+      <aside className="w-60 bg-gray-900 text-white flex flex-col shadow-md">
+        <div className="p-4 mb-4">
+          <h2 className="text-xl font-semibold tracking-wide">🎓 Admin</h2>
         </div>
 
-        <nav className="flex-1 space-y-1">
-          {navItems.map(({ to, label }) => (
+        <nav className="flex-1 space-y-1 px-4 pb-4">
+          {navItems.map(({ to, label, icon }) => (
             <Link
               key={to}
               to={to}
-              className={`block px-4 py-2 rounded text-sm transition ${
+              className={clsx(
+                'flex items-center px-3 py-2 rounded text-sm transition group relative',
                 location.pathname === to
                   ? 'bg-gray-700 text-yellow-400'
                   : 'hover:bg-gray-800 hover:text-yellow-300'
-              }`}
+              )}
             >
-              {label}
+              <span className="text-lg mr-2">{icon}</span>
+              <span className="truncate">{label}</span>
+              <span className="absolute left-full ml-2 opacity-0 group-hover:opacity-100 bg-gray-700 text-white text-xs rounded px-2 py-1 z-10 transition whitespace-nowrap">
+                {label}
+              </span>
             </Link>
           ))}
         </nav>
-
-        <div className="mt-auto pt-4 border-t border-gray-700">
-          <button
-            onClick={handleLogout}
-            className="w-full text-left px-4 py-2 text-red-400 hover:text-red-600 text-sm"
-          >
-            🚪 Logout
-          </button>
-        </div>
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col overflow-hidden">
+      <main className="flex-1 flex flex-col">
         {/* Header */}
-        <header className="bg-white shadow px-6 py-4 flex justify-between items-center">
+        <header className="bg-white shadow px-6 py-4 flex justify-between items-center relative">
           <div>
             <h1 className="text-xl font-bold text-gray-800">
               Welcome, {user?.name || 'Admin'}
             </h1>
             <p className="text-sm text-gray-500">Role: {user?.role}</p>
           </div>
-          {/* Avatar placeholder */}
-          <div className="w-10 h-10 rounded-full bg-yellow-400 flex items-center justify-center text-white font-bold">
-            {user?.name?.[0] || 'A'}
+
+          {/* Avatar Menu */}
+          <div className="relative" ref={menuRef}>
+            <button
+              className="hover:opacity-90 focus:outline-none"
+              onClick={() => setMenuOpen(!menuOpen)}
+              aria-label="User Menu"
+            >
+              <UserCircle className="w-10 h-10 text-yellow-500" />
+            </button>
+
+            {menuOpen && (
+              <div className="absolute right-0 mt-2 w-48 bg-white shadow-lg rounded-lg overflow-hidden z-50">
+                <div className="px-4 py-3 border-b">
+                  <p className="text-sm font-medium text-gray-900">{user?.name}</p>
+                  <p className="text-xs text-gray-500">{user?.email}</p>
+                </div>
+                <ul className="py-1">
+                  <li>
+                    <button
+                      onClick={() => navigate('/admin/profile')}
+                      className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      <User className="w-4 h-4 mr-2" /> Profile
+                    </button>
+                  </li>
+                  <li>
+                    <button
+                      onClick={handleLogout}
+                      className="flex items-center w-full px-4 py-2 text-sm text-red-500 hover:bg-gray-100"
+                    >
+                      <LogOut className="w-4 h-4 mr-2" /> Logout
+                    </button>
+                  </li>
+                </ul>
+              </div>
+            )}
           </div>
         </header>
 
-        {/* Routed Pages */}
-        <section className="flex-1 overflow-y-auto p-6">
+        {/* Routed Content */}
+        <section className="flex-1 overflow-y-auto p-6 bg-gray-50">
           <Outlet />
         </section>
       </main>
