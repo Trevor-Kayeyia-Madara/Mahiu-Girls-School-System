@@ -1,226 +1,186 @@
-# Maai Mahiu Girls Management System
+# 🏫 School Management System
 
-Welcome to the Mahai Mahiu Girls Management System! This project provides a comprehensive solution for managing student and staff data, facilitating communication, and streamlining various administrative tasks at Maai Mahiu Girls School.
-
----
-
-## Table of Contents
-
-- [Project Description](#project-description)
-- [Key Features](#key-features)
-- [Technologies Used](#technologies-used)
-- [Installation Requirements](#installation-requirements)
-- [Configuration](#configuration)
-- [Database](#database)
-- [Setup Instructions](#setup-instructions)
-- [Usage](#usage)
-- [Testing](#testing)
-- [Deployment](#deployment)
-- [Screenshots](#screenshots)
-- [FAQ](#faq)
-- [Changelog](#changelog)
-- [Acknowledgments](#acknowledgments)
-- [Future Improvements](#future-improvements)
-- [Contributing Guidelines](#contributing-guidelines)
-- [Roadmap](#roadmap)
-- [Support](#support)
-- [License](#license)
-- [Contributors](#contributors)
-- [Contact Information](#contact-information)
+A full-featured School Management System built with **Flask (Python)** for the backend and **React + TypeScript** for the frontend. The system supports multi-role dashboards for **Admins**, **Teachers**, **Parents**, and optionally **Students**.
 
 ---
 
-## Project Description
+## 🚀 Features
 
-The Mahai Mahiu Girls Management System is designed to:
+### ✅ Admin Panel
 
-- Accept and securely store student and staff data.
-- Allow retrieval and updates of records.
-- Ensure data safety through user authentication.
-- Provide a user-friendly interface for ease of use by school staff and students.
+- User management (create, read, update, delete)
+- Manage Teachers, Students, Subjects, Classrooms
+- Assign Subjects and Class Teachers
+- Create Timetables with inline editing
+- Manage Exam Types and Schedules
+- View and export Class and Student Reports (CSV/PDF)
+- View KCSE-style rankings and class mean scores
 
----
+### ✅ Teacher Panel
 
-## Key Features
+- View assigned subjects and classes
+- Enter and update student grades per exam
+- View and export performance summaries
+- Generate class reports
+- Student performance breakdown and analysis
 
-- **Student Information Management:** Efficient handling of personal and academic data.
-- **Staff Information Management:** Manage roles, responsibilities, and records of staff.
-- **Communication and Notifications:** Notify students, parents, and staff via alerts.
-- **User Access Control:** Role-based permissions to ensure data security.
+### ✅ Parent Panel
 
----
-
-## Technologies Used
-
-- **Programming Language:** Python
-- **Web Framework:** Flask
-- **Database:** SQLite3
-- **Frontend:** HTML, CSS, JavaScript
-
----
-
-## Installation Requirements
-
-- Python 3.x
-- pip (Python package installer)
-- A web browser (Chrome, Firefox, etc.)
+- View child’s academic performance
+- Download child’s report cards (CSV/PDF)
+- View class position and KCSE grade summaries
 
 ---
 
-## Configuration
+## 🧰 Tech Stack
 
-Before running the application, ensure:
-
-- Environment variables (if any) are set.
-- Configuration files are reviewed and updated (e.g., database paths, secret keys, etc.).
-
----
-
-## Database
-
-- **Primary Database:** SQLite3
-- **Backup Database:** Additional SQLite3 backups for data integrity and reliability.
+| Area        | Stack                              |
+|-------------|-------------------------------------|
+| **Frontend** | React, TypeScript, Tailwind CSS     |
+| **Backend**  | Python, Flask, SQLAlchemy           |
+| **Database** | PostgreSQL or SQLite (dev mode)     |
+| **Auth**     | JWT-based Role Authorization        |
+| **PDF Export** | ReportLab                         |
+| **CSV Export** | Python CSV module                 |
 
 ---
 
-## Setup Instructions
+## 📁 Project Structure
 
-1. Clone the repository:
-
-   ```bash
-   git clone https://github.com/Trevor-Kayeyia-Madara/Mahiu-Girls-School-System.git
-   ```
-
-2. Navigate to the project directory:
-
-   ```bash
-   cd Mahiu-Girls-School-System
-   ```
-
-3. Install dependencies:
-
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-4. Run the application:
-
-   ```bash
-   python app.py
-   ```
+📦 school-management-system/
+├── backend/
+│   ├── app.py
+│   ├── models/
+│   ├── routes/
+│   │   ├── admin.py
+│   │   ├── teachers.py
+│   │   ├── parents.py
+│   │   └── reports.py
+│   ├── utils/
+│   └── ...
+└── frontend/
+    ├── src/
+    │   ├── pages/
+    │   │   ├── Admin/
+    │   │   ├── Teacher/
+    │   │   ├── Parent/
+    │   │   └── Shared/
+    │   ├── components/
+    │   └── App.tsx
 
 ---
 
-## Usage
+## 🛠️ Setup Instructions
 
-Access the app at: [http://localhost:5000](http://localhost:5000)
-
-From the interface, you can:
-
-- Register students and staff.
-- View and update existing records.
-- Send notifications to students and parents.
-
----
-
-## Testing
-
-To run tests:
+### 1. Backend Setup (Flask)
 
 ```bash
-pytest
+cd backend
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
 ```
 
-Ensure you have the `pytest` framework installed.
+Create `.env` file:
+
+```env
+SECRET_KEY=your-secret
+DATABASE_URL=sqlite:///school.db  # or PostgreSQL URI
+```
+
+Initialize database:
+
+```bash
+flask db init
+flask db migrate
+flask db upgrade
+```
+
+Run the server:
+
+```bash
+flask run
+```
+
+### 2. Frontend Setup (React)
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Ensure the frontend connects to:  
+`http://localhost:5001` for API calls.
 
 ---
 
-## Deployment
+## 📦 Key Endpoints Summary
 
-To deploy in production:
+### 🔐 Auth
 
-1. Set up a server (e.g., Gunicorn, uWSGI, or Heroku).
-2. Configure the server to serve the Flask app.
-3. Ensure database access and environment settings are properly set.
+- `POST /api/v1/auth/login`
+- `POST /api/v1/auth/register` (admin only)
 
----
+### 👨‍🏫 Admin
 
-## Screenshots
+- `GET/POST /api/v1/teachers`
+- `GET/POST /api/v1/students`
+- `GET/POST /api/v1/subjects`
+- `GET/POST /api/v1/classrooms`
+- `GET /api/v1/grades/class/:id`
+- `GET /api/v1/reports/export/class/:id/pdf`
 
-_Add relevant screenshots here to demonstrate the interface._
+### 👨‍🏫 Teachers
 
----
+- `GET /api/v1/teacher-subjects/me`
+- `POST /api/v1/grades`
+- `GET /api/v1/grades/summary/class/:class_id/subject/:subject_id`
+- `GET /api/v1/reports/class/:class_id`
+- `GET /api/v1/reports/export/student/:id/pdf`
 
-## FAQ
+### 👨‍👩‍👧‍👦 Parents
 
-**Q: How do I reset my password?**  
-A: Click on the "Forgot Password" link on the login page.
-
-**Q: What should I do if I encounter an error?**  
-A: Check application logs and report issues on GitHub.
-
----
-
-## Changelog
-
-- **v1.0.0:** Initial release with core features.
-- **v1.1.0:** Added user authentication and notifications.
-
----
-
-## Acknowledgments
-
-Thanks to all contributors and the open-source community behind Flask, SQLite, and other dependencies.
+- `GET /api/v1/parents/me/students`
+- `GET /api/v1/reports/student/:id`
+- `GET /api/v1/reports/export/student/:id/pdf`
 
 ---
 
-## Future Improvements
+## 📊 Reporting & Analysis
 
-- Mobile-responsive version of the web app.
-- Enhanced reporting and analytics for student performance.
-
----
-
-## Contributing Guidelines
-
-We welcome contributions!
-
-1. Fork the repository.
-2. Create a feature or bug-fix branch.
-3. Submit a pull request with a clear description.
+- 📝 Class-wise summaries with position and KCSE grading
+- 📄 Export to CSV or PDF
+- 📈 View rankings per Form Level (Form 1–4) across all streams
+- 🧮 Mean scores calculated using:
+  - `CAT 1 + CAT 2 → 40%`
+  - `Main Exam → 60%`
 
 ---
 
-## Roadmap
+## 🧪 Testing Accounts
 
-- Q1 2024: Feature updates based on school feedback.
-- Q2 2024: Launch of a mobile app version.
+| Role    | Email               | Password  |
+|---------|---------------------|-----------|
+| Admin   | <admin@example.com>   | admin123  |
+| Teacher | <teacher@example.com> | teach123  |
+| Parent  | <parent@example.com>  | parent123 |
 
----
-
-## Support
-
-For issues, please:
-
-- Open a GitHub issue  
-- Or contact the maintainer directly
+Create test accounts via the Admin Panel.
 
 ---
 
-## License
+## ✨ Optional Features (Advanced Ideas)
 
-This project is licensed under the MIT License.  
-See the [LICENSE](LICENSE) file for details.
-
----
-
-## Contributors
-
-- **Trevor Kayeyia Madara**
+- 📆 Attendance tracking
+- 💬 Teacher–Parent messaging
+- 📬 Email notifications on grade updates
+- 📅 Dynamic term/year filtering for reports
+- 🧾 Fee payment tracking module
+- 📱 Mobile-friendly version (PWA or Flutter)
 
 ---
 
-## Contact Information
+## 📚 License
 
-- **Email:** [trevormadarakayeyia@gmail.com](mailto:trevormadarakayeyia@gmail.com)  
-- **GitHub:** [@Trevor-Kayeyia-Madara](https://github.com/Trevor-Kayeyia-Madara)
+MIT © 2025 — Built with ❤️ for educational institutions.
