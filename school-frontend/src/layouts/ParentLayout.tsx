@@ -6,7 +6,7 @@ export default function ParentLayout() {
 
   const handleLogout = () => {
     localStorage.clear()
-    navigate('/login')
+    navigate('/')
   }
 
   return (
