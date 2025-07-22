@@ -3,20 +3,26 @@ import axios from 'axios'
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState({
-    users: null,
-    students: null,
-    teachers: null,
-    reports: null,
+    users: 0,
+    students: 0,
+    teachers: 0,
+    reports: 0,
   })
 
-  const token = localStorage.getItem('token')
-  const headers = { Authorization: `Bearer ${token}` }
-
   useEffect(() => {
-    axios.get('http://localhost:5001/api/v1/dashboard/stats', { headers })
-      .then(res => setStats(res.data))
-      .catch(err => console.error('Failed to load dashboard stats', err))
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    const token = localStorage.getItem('token')
+    const headers = { Authorization: `Bearer ${token}` }
+
+    axios
+      .get('http://localhost:5001/api/v1/dashboard/stats', { headers })
+      .then(res => {
+        console.log('✅ API Response:', res.data)
+        const { users, students, teachers, reports } = res.data
+        setStats({ users, students, teachers, reports })
+      })
+      .catch(err => {
+        console.error('❌ Failed to load dashboard stats', err)
+      })
   }, [])
 
   return (
@@ -32,27 +38,35 @@ export default function AdminDashboard() {
 
       {/* Overview Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card title="Users" count={stats.users} color="blue" />
-        <Card title="Students" count={stats.students} color="green" />
-        <Card title="Teachers" count={stats.teachers} color="purple" />
-        <Card title="Reports" count={stats.reports} color="yellow" />
-      </div>
-
-      <div className="mt-8 p-4 bg-gray-50 border border-gray-200 rounded-lg">
-        <h4 className="font-semibold text-gray-700 mb-2">👋 Quick Tip</h4>
-        <p className="text-sm text-gray-600">
-          Use the left sidebar to navigate through system modules. You can manage users, assign teachers to classes, view grades, and generate reports.
-        </p>
+        <StatCard title="Users" count={stats.users} color="blue" />
+        <StatCard title="Students" count={stats.students} color="green" />
+        <StatCard title="Teachers" count={stats.teachers} color="purple" />
+        <StatCard title="Reports" count={stats.reports} color="yellow" />
       </div>
     </div>
   )
 }
 
-function Card({ title, count, color }: { title: string; count: number | null; color: string }) {
+function StatCard({
+  title,
+  count,
+  color,
+}: {
+  title: string
+  count: number
+  color: 'blue' | 'green' | 'purple' | 'yellow'
+}) {
+  const colorMap: Record<string, string> = {
+    blue: 'from-blue-500 to-blue-700',
+    green: 'from-green-500 to-green-700',
+    purple: 'from-purple-500 to-purple-700',
+    yellow: 'from-yellow-500 to-yellow-700',
+  }
+
   return (
-    <div className={`bg-gradient-to-tr from-${color}-500 to-${color}-700 text-white p-4 rounded-xl shadow`}>
+    <div className={`bg-gradient-to-tr ${colorMap[color]} text-white p-4 rounded-xl shadow`}>
       <h3 className="text-lg font-medium">{title}</h3>
-      <p className="text-3xl font-bold mt-2">{count ?? '...'}</p>
+      <p className="text-3xl font-bold mt-2">{count}</p>
     </div>
   )
 }
