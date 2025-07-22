@@ -3,7 +3,6 @@ from sqlalchemy.orm import joinedload
 from io import StringIO, BytesIO
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4
-from sqlalchemy.orm import joinedload
 from app import db
 from models import Student, Classroom, Grade, Subject, ExamSchedule
 from utils.auth_utils import token_required
@@ -13,95 +12,129 @@ import csv
 report_bp = Blueprint('reports', __name__)
 
 
+# 🧠 Determine if the class follows KCSE exam format
 def is_kcse_style(class_name: str) -> bool:
     return class_name.startswith("Form 3") or class_name.startswith("Form 4")
 
 
+# 📊 For Form 1-2: Combine CATs and Main Exam into weighted scores per subject
 def aggregate_form1_2(grades):
-    """Aggregate CAT 1, CAT 2, and Main Exam for each subject"""
     grouped = {}
     for g in grades:
         key = g.subject_id
+        exam_name = g.exam_schedule.exam.name if g.exam_schedule and g.exam_schedule.exam else 'Unknown'
         grouped.setdefault(key, {'subject': g.subject.name, 'scores': []})
-        grouped[key]['scores'].append((g.exam_schedule.exam.name if g.exam_schedule and g.exam_schedule.exam else 'Unknown', g.marks))
+        grouped[key]['scores'].append((exam_name, g.marks))
 
-    result = []
-    for sub in grouped.values():
-        scores = {name: score for name, score in sub['scores']}
+    results = []
+    for subject in grouped.values():
+        scores = {name: score for name, score in subject['scores']}
         cat1 = scores.get("CAT 1", 0)
         cat2 = scores.get("CAT 2", 0)
         main = scores.get("Main Exam", 0)
-
-        # Weighted average calculation
         total = round(((cat1 + cat2) / 100 * 40) + (main / 100 * 60), 2)
-        result.append({
-            'subject': sub['subject'],
+
+        results.append({
+            'subject': subject['subject'],
             'score': total,
             'grade': get_kcse_grade(total)
         })
+    return results
 
-    return result
 
+# 📄 Individual student report (used by admin, teacher, parent)
 @report_bp.route('/student/<int:student_id>', methods=['GET'])
 @token_required
 def student_report(current_user, student_id):
-    # Get student and their class
     student = Student.query.options(joinedload(Student.classroom)).get_or_404(student_id)
 
-    # Access control: only admins or teachers allowed
-    if current_user.role not in ['admin', 'teacher']:
+    # Role validation
+    if current_user.role not in ['admin', 'teacher', 'parent'] and current_user.user_id != getattr(student.user, 'user_id', None):
         return jsonify({'error': 'Access denied'}), 403
 
-    # Get grades with subject and exam data
-    grades = (
-        Grade.query
-        .filter_by(student_id=student_id)
-        .options(
-            joinedload(Grade.subject),
-            joinedload(Grade.exam_schedule).joinedload(ExamSchedule.exam)
-        )
-        .all()
-    )
+    grades = Grade.query.filter_by(student_id=student_id).options(
+        joinedload(Grade.subject),
+        joinedload(Grade.exam_schedule).joinedload(ExamSchedule.exam)
+    ).all()
 
     if not grades:
-        return jsonify({'message': 'No grades found for this student'}), 404
+        return jsonify({'message': 'No grades found'}), 404
 
-    report_items = []
-    for g in grades:
-        exam = g.exam_schedule.exam if g.exam_schedule else None
-        report_items.append({
-            'subject': g.subject.name if g.subject else 'N/A',
-            'exam_schedule': {
-                'exam': {
-                    'name': exam.name if exam else 'N/A'
-                } if exam else None
-            } if g.exam_schedule else None,
-            'marks': g.marks,
+    # Form 3-4: view all exam scores
+    if is_kcse_style(student.classroom.class_name):
+        subject_grades = [{
+            'subject': g.subject.name,
+            'exam': g.exam_schedule.exam.name if g.exam_schedule and g.exam_schedule.exam else 'N/A',
+            'score': g.marks,
             'grade': get_kcse_grade(g.marks),
-            'term': exam.term if exam else 'N/A',
-            'year': exam.year if exam else 'N/A'
-        })
+            'term': g.exam_schedule.exam.term if g.exam_schedule and g.exam_schedule.exam else '',
+            'year': g.exam_schedule.exam.year if g.exam_schedule and g.exam_schedule.exam else ''
+        } for g in grades]
+        average = round(sum(g.marks for g in grades) / len(grades), 2)
+    else:
+        # Form 1-2: aggregate into one weighted subject score
+        subject_grades = aggregate_form1_2(grades)
+        average = round(sum(g['score'] for g in subject_grades) / len(subject_grades), 2)
 
     return jsonify({
         'student_id': student.student_id,
         'student_name': f"{student.first_name} {student.last_name}",
-        'class_name': student.classroom.class_name if student.classroom else '',
-        'average_score': round(sum(g.marks for g in grades) / len(grades), 2),
-        'grades': report_items
-    }), 200
+        'class_name': student.classroom.class_name,
+        'average_score': average,
+        'grades': subject_grades
+    })
 
 
+# 📊 Class performance report (used by admin, teacher)
+@report_bp.route('/class/<int:class_id>', methods=['GET'])
+@token_required
+def class_report(current_user, class_id):
+    if current_user.role not in ['admin', 'teacher']:
+        return jsonify({'error': 'Access denied'}), 403
 
+    classroom = Classroom.query.get_or_404(class_id)
+    students = Student.query.filter_by(class_id=class_id).all()
+    data = []
+
+    for s in students:
+        grades = Grade.query.filter_by(student_id=s.student_id).all()
+        if not grades:
+            continue
+        avg = round(sum(g.marks for g in grades) / len(grades), 2)
+        data.append({
+            'student_id': s.student_id,
+            'student_name': f"{s.first_name} {s.last_name}",
+            'average_score': avg,
+            'mean_grade': get_kcse_grade(avg)
+        })
+
+    ranked = sorted(data, key=lambda d: d['average_score'], reverse=True)
+    for i, student in enumerate(ranked, 1):
+        student['position'] = i
+
+    return jsonify({
+        'class_id': classroom.class_id,
+        'class_name': classroom.class_name,
+        'students': ranked
+    })
+
+
+# ⬇ Export student report as PDF
 @report_bp.route('/export/student/<int:student_id>/pdf', methods=['GET'])
 @token_required
 def export_student_pdf(current_user, student_id):
     student = Student.query.options(joinedload(Student.classroom)).get_or_404(student_id)
-    if current_user.role not in ['admin', 'teacher','parent'] and current_user.user_id != getattr(student.user, 'user_id', None):
+
+    if current_user.role not in ['admin', 'teacher', 'parent'] and current_user.user_id != getattr(student.user, 'user_id', None):
         return jsonify({'error': 'Access denied'}), 403
 
-    grades = Grade.query.filter_by(student_id=student_id).options(joinedload(Grade.subject), joinedload(Grade.exam_schedule)).all()
+    grades = Grade.query.filter_by(student_id=student_id).options(
+        joinedload(Grade.subject),
+        joinedload(Grade.exam_schedule).joinedload(ExamSchedule.exam)
+    ).all()
+
     if not grades:
-        return jsonify({'error': 'No grades to export'}), 404
+        return jsonify({'message': 'No grades to export'}), 404
 
     buffer = BytesIO()
     p = canvas.Canvas(buffer, pagesize=A4)
@@ -116,27 +149,28 @@ def export_student_pdf(current_user, student_id):
     p.drawString(60, y, f"Name: {student.first_name} {student.last_name}")
     p.drawString(300, y, f"Admission #: {student.admission_number}")
     y -= 20
-    p.drawString(60, y, f"Class: {student.classroom.class_name if student.classroom else 'N/A'}")
+    p.drawString(60, y, f"Class: {student.classroom.class_name}")
     y -= 30
 
     p.setFont("Helvetica-Bold", 10)
     p.drawString(60, y, "Subject")
     p.drawString(180, y, "Exam")
-    p.drawString(300, y, "Score")
+    p.drawString(300, y, "Marks")
     p.drawString(360, y, "Term")
     p.drawString(420, y, "Year")
     y -= 15
 
     p.setFont("Helvetica", 10)
     for g in grades:
-        if y < 50:
+        if y < 40:
             p.showPage()
             y = height - 40
+        exam = g.exam_schedule.exam if g.exam_schedule else None
         p.drawString(60, y, g.subject.name)
-        p.drawString(180, y, g.exam_schedule.exam.name if g.exam_schedule and g.exam_schedule.exam else "N/A")  # ✅ Safe access
+        p.drawString(180, y, exam.name if exam else "N/A")
         p.drawString(300, y, str(g.marks))
-        p.drawString(360, y, g.exam_schedule.exam.term)
-        p.drawString(420, y, str(g.exam_schedule.exam.year))
+        p.drawString(360, y, exam.term if exam else "")
+        p.drawString(420, y, str(exam.year) if exam else "")
         y -= 15
 
     p.save()
@@ -149,40 +183,31 @@ def export_student_pdf(current_user, student_id):
         mimetype='application/pdf'
     )
 
+
+# 📁 Export student report as CSV
 @report_bp.route('/export/student/<int:student_id>/csv', methods=['GET'])
 @token_required
 def export_student_csv(current_user, student_id):
-    if current_user.role not in ['admin', 'teacher', 'parent']:
-        return jsonify({'error': 'Access denied'}), 403
-
     student = Student.query.get_or_404(student_id)
 
-    if current_user.role == 'student' and current_user.user_id != student.user_id:
-        return jsonify({'error': 'Unauthorized access to another student\'s data'}), 403
+    if current_user.role not in ['admin', 'teacher', 'parent'] and current_user.user_id != student.user_id:
+        return jsonify({'error': 'Access denied'}), 403
 
     text_stream = StringIO()
     writer = csv.writer(text_stream)
-
-    # Optional: add BOM for Excel compatibility
-    text_stream.write('\ufeff')
-
+    text_stream.write('\ufeff')  # BOM for Excel
     writer.writerow(['Student Name', 'Subject', 'Score', 'Grade', 'Exam', 'Term', 'Year'])
 
-    grades = (
-        Grade.query
-        .filter_by(student_id=student_id)
-        .options(
-            joinedload(Grade.subject),
-            joinedload(Grade.exam_schedule).joinedload(ExamSchedule.exam)
-        )
-        .all()
-    )
+    grades = Grade.query.filter_by(student_id=student_id).options(
+        joinedload(Grade.subject),
+        joinedload(Grade.exam_schedule).joinedload(ExamSchedule.exam)
+    ).all()
 
     for g in grades:
         exam = g.exam_schedule.exam if g.exam_schedule else None
         writer.writerow([
             f"{student.first_name} {student.last_name}",
-            g.subject.name if g.subject else '',
+            g.subject.name,
             g.marks,
             get_kcse_grade(g.marks),
             exam.name if exam else '',
@@ -190,63 +215,17 @@ def export_student_csv(current_user, student_id):
             exam.year if exam else ''
         ])
 
-    # Encode text and return as binary stream
-    csv_bytes = text_stream.getvalue().encode('utf-8')
-    output = BytesIO(csv_bytes)
+    output = BytesIO(text_stream.getvalue().encode('utf-8'))
     output.seek(0)
 
     return Response(
         output,
         mimetype='text/csv',
-        headers={
-            'Content-Disposition': f'attachment; filename={student.admission_number}_report.csv'
-        }
-    )
-@report_bp.route('/export/class/<int:class_id>/pdf', methods=['GET'])
-@token_required
-def export_class_pdf(current_user, class_id):
-    if current_user.role not in ['admin', 'teacher']:
-        return jsonify({'error': 'Access denied'}), 403
-
-    classroom = Classroom.query.get_or_404(class_id)
-    students = Student.query.filter_by(class_id=class_id).all()
-
-    buffer = BytesIO()
-    p = canvas.Canvas(buffer, pagesize=A4)
-    width, height = A4
-    y = height - 40
-
-    p.setFont("Helvetica-Bold", 14)
-    p.drawString(60, y, f"{classroom.class_name} - KCSE Summary")
-    y -= 20
-
-    for student in students:
-        grades = Grade.query.filter_by(student_id=student.student_id).all()
-        if not grades:
-            continue
-
-        avg = round(sum(g.marks for g in grades) / len(grades), 2)
-        grade = get_kcse_grade(avg)
-
-        p.setFont("Helvetica", 10)
-        y -= 15
-        p.drawString(60, y, f"{student.first_name} {student.last_name} | Mean Score: {avg} | Grade: {grade}")
-
-        if y < 40:
-            p.showPage()
-            y = height - 40
-
-    p.save()
-    buffer.seek(0)
-
-    return send_file(
-        buffer,
-        as_attachment=True,
-        download_name=f"{classroom.class_name}_summary.pdf",
-        mimetype='application/pdf'
+        headers={'Content-Disposition': f'attachment; filename={student.admission_number}_report.csv'}
     )
 
 
+# 📁 Export class report as CSV
 @report_bp.route('/export/class/<int:class_id>/csv', methods=['GET'])
 @token_required
 def export_class_csv(current_user, class_id):
@@ -258,28 +237,20 @@ def export_class_csv(current_user, class_id):
 
     text_stream = StringIO()
     writer = csv.writer(text_stream)
-    
-    # Optional: BOM for Excel compatibility
-    text_stream.write('\ufeff')  
-
-    writer.writerow(['Student Name', 'Subject', 'Score', 'Grade', 'Exam', 'Term', 'Year'])
+    text_stream.write('\ufeff')
+    writer.writerow(['Student Name', 'Subject', 'Marks', 'Grade', 'Exam', 'Term', 'Year'])
 
     for s in students:
-        grades = (
-            Grade.query
-            .filter_by(student_id=s.student_id)
-            .options(
-                joinedload(Grade.subject),
-                joinedload(Grade.exam_schedule).joinedload(ExamSchedule.exam)
-            )
-            .all()
-        )
+        grades = Grade.query.filter_by(student_id=s.student_id).options(
+            joinedload(Grade.subject),
+            joinedload(Grade.exam_schedule).joinedload(ExamSchedule.exam)
+        ).all()
 
         for g in grades:
             exam = g.exam_schedule.exam if g.exam_schedule else None
             writer.writerow([
                 f"{s.first_name} {s.last_name}",
-                g.subject.name if g.subject else '',
+                g.subject.name,
                 g.marks,
                 get_kcse_grade(g.marks),
                 exam.name if exam else '',
@@ -287,19 +258,16 @@ def export_class_csv(current_user, class_id):
                 exam.year if exam else ''
             ])
 
-    # Encode text to bytes
-    csv_bytes = text_stream.getvalue().encode('utf-8')
-    output = BytesIO(csv_bytes)
+    output = BytesIO(text_stream.getvalue().encode('utf-8'))
     output.seek(0)
 
     return Response(
         output,
         mimetype="text/csv",
-        headers={
-            "Content-Disposition": f"attachment; filename={classroom.class_name}_report.csv"
-        }
+        headers={"Content-Disposition": f"attachment; filename={classroom.class_name}_report.csv"}
     )
     
+    # Overall report
 @report_bp.route('/overall-forms', methods=['GET', 'OPTIONS'])
 @token_required
 def overall_forms_report(current_user):
