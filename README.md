@@ -47,6 +47,7 @@ A full-featured School Management System built with **Flask (Python)** for the b
 
 ## 📁 Project Structure
 
+```
 📦 school-management-system/
 ├── backend/
 │   ├── app.py
@@ -68,7 +69,7 @@ A full-featured School Management System built with **Flask (Python)** for the b
     │   ├── components/
     │   └── App.tsx
 
----
+```
 
 ## 🛠️ Setup Instructions
 
