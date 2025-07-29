@@ -9,8 +9,8 @@ interface Student {
   last_name: string
   gender: string
   date_of_birth: string
-  parent_id: number
-  class_id: number
+  parent_name: string
+  class_name: string
 }
 
 export default function AdminStudents() {
@@ -100,8 +100,8 @@ export default function AdminStudents() {
                     <td className="px-3 py-2">{s.first_name} {s.last_name}</td>
                     <td className="px-3 py-2">{s.gender}</td>
                     <td className="px-3 py-2">{s.date_of_birth}</td>
-                    <td className="px-3 py-2">{s.parent_id}</td>
-                    <td className="px-3 py-2">{s.class_id}</td>
+                    <td className="px-3 py-2">{s.parent_name}</td>
+                    <td className="px-3 py-2">{s.class_name}</td>
                     <td className="px-3 py-2 space-x-2">
                       <button
                         className="text-blue-600 hover:underline"

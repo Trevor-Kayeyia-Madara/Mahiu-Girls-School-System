@@ -14,6 +14,12 @@ export default function UserForm({ user, onClose, onSaved }: Props) {
   const [role, setRole] = useState('')
   const [password, setPassword] = useState('')
 
+  // Teacher-specific fields
+  const [gender, setGender] = useState('')
+  const [contact, setContact] = useState('')
+  const [dateOfBirth, setDateOfBirth] = useState('')
+  const [qualifications, setQualifications] = useState('')
+
   useEffect(() => {
     if (user) {
       setName(user.name)
@@ -23,22 +29,41 @@ export default function UserForm({ user, onClose, onSaved }: Props) {
   }, [user])
 
   const handleSubmit = async (e: React.FormEvent) => {
-    const token = localStorage.getItem('token')  // or wherever you store the JWT
-        const headers = {
-          Authorization: `Bearer ${token}`
-        }
     e.preventDefault()
+    const token = localStorage.getItem('token')
+    const headers = { Authorization: `Bearer ${token}` }
 
-    const payload = { name, email, role, ...(user ? {} : { password }) }
+    try {
+      if (user) {
+        await axios.put(`http://localhost:5001/api/v1/users/${user.user_id}`, {
+          name, email, role
+        }, { headers })
+      } else {
+        if (role === 'teacher') {
+          await axios.post(`http://localhost:5001/api/v1/teachers`, {
+            name,
+            email,
+            password,
+            gender,
+            contact,
+            date_of_birth: dateOfBirth,
+            qualifications,
+          }, { headers })
+        } else {
+          await axios.post(`http://localhost:5001/api/v1/users`, {
+            name, email, password, role
+          }, { headers })
+        }
+      }
 
-    if (user) {
-      await axios.put(`http://localhost:5001/api/v1/users/${user.user_id}`, payload,{headers})
-    } else {
-      await axios.post(`http://localhost:5001/api/v1/users`, payload,{headers})
+      onSaved()
+      onClose()
+    } catch (error: any) {
+      console.error('Error saving user and/or teacher:', error)
+      if (axios.isAxiosError(error)) {
+        alert(error.response?.data?.error || 'Something went wrong.')
+      }
     }
-
-    onSaved()
-    onClose()
   }
 
   return (
@@ -72,6 +97,7 @@ export default function UserForm({ user, onClose, onSaved }: Props) {
             <option value="teacher">Teacher</option>
             <option value="parent">Parent</option>
           </select>
+
           {!user && (
             <input
               type="password"
@@ -82,6 +108,45 @@ export default function UserForm({ user, onClose, onSaved }: Props) {
               required
             />
           )}
+
+          {role === 'teacher' && !user && (
+            <>
+              <select
+                value={gender}
+                onChange={(e) => setGender(e.target.value)}
+                className="w-full border p-2 rounded"
+              >
+                <option value="">-- Select Gender --</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+              </select>
+
+              <input
+                type="text"
+                value={contact}
+                onChange={(e) => setContact(e.target.value)}
+                className="w-full border p-2 rounded"
+                placeholder="Contact"
+              />
+
+              <input
+                type="date"
+                value={dateOfBirth}
+                onChange={(e) => setDateOfBirth(e.target.value)}
+                className="w-full border p-2 rounded"
+                placeholder="Date of Birth"
+              />
+
+              <input
+                type="text"
+                value={qualifications}
+                onChange={(e) => setQualifications(e.target.value)}
+                className="w-full border p-2 rounded"
+                placeholder="Qualifications"
+              />
+            </>
+          )}
+
           <div className="flex justify-end space-x-2">
             <button
               type="button"
