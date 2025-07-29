@@ -25,6 +25,7 @@ import ParentLayout from '../layouts/ParentLayout'
 import ParentReports from '../pages/parents/Reports'
 import AdminOverallReports from '../pages/admin/Overall'
 import OverallSchoolRankings from '../pages/admin/School'
+import AdminStudentSubjectSelection from '../pages/admin/Selections'
 
 
 const router = createBrowserRouter([
@@ -43,6 +44,7 @@ const router = createBrowserRouter([
           { path: 'users', element: <AdminUsers /> },
           {path:'teachers', element: <AdminTeachers />},
           {path:'students', element:<AdminStudents />},
+          {path:'student-selection', element:<AdminStudentSubjectSelection />},
           {path:'classrooms', element: <AdminClassrooms />},
           {path:'subjects', element: <AdminSubjects />},
           {path: 'assignments', element: <AdminAssignments />},

@@ -28,6 +28,7 @@ export default function AdminLayout() {
     { to: '/admin', label: 'Dashboard', icon: '📊' },
     { to: '/admin/users', label: 'Users', icon: '👤' },
     { to: '/admin/students', label: 'Students', icon: '🎓' },
+    { to: '/admin/student-selection', label: 'Student Subject Selection', icon: '🎓' },
     { to: '/admin/teachers', label: 'Teachers', icon: '🧑‍🏫' },
     { to: '/admin/assignments', label: 'Classes', icon: '📚' },
     { to: '/admin/classrooms', label: 'Classrooms', icon: '🏫' },
