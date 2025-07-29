@@ -8,10 +8,8 @@ class Exam(db.Model):
     name = db.Column(db.String(100), nullable=False)  # e.g., CAT 1, CAT 2, Main Exam
     term = db.Column(db.String(10), nullable=False)   # e.g., Term 1, Term 2
     year = db.Column(db.Integer, nullable=False)
+    form_level = db.Column(db.String(10), nullable=False)  # e.g., Form 1, Form 2, Form 3, Form 4
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    # Relationship to grades (if grades still link to this exam)
-    
-
     def __repr__(self):
-        return f"<Exam {self.name} ({self.term} {self.year})>"
+        return f"<Exam {self.name} ({self.form_level}, {self.term} {self.year})>"
