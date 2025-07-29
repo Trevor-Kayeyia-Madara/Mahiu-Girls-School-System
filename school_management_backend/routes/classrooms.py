@@ -17,6 +17,7 @@ def get_all_classes(current_user):
         'class_id': c.class_id,
         'class_name': c.class_name,
         'class_teacher_id': c.class_teacher_id,
+        'form_level': c.form_level,
         'class_teacher_name': c.class_teacher.user.name if c.class_teacher else None
     } for c in classes]), 200
 
@@ -29,6 +30,7 @@ def get_class(current_user, class_id):
         'class_id': classroom.class_id,
         'class_name': classroom.class_name,
         'class_teacher_id': classroom.class_teacher_id,
+        'form_level': classroom.form_level,
         'class_teacher_name': classroom.class_teacher.user.name if classroom.class_teacher else None
     }), 200
 

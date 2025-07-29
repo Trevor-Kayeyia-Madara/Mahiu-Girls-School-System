@@ -235,3 +235,39 @@ def get_students_by_class(current_user, class_id):
         })
 
     return jsonify(result), 200
+
+# 🔍 Filter students
+@student_bp.route('/filter', methods=['GET'])
+@token_required
+def filter_students(current_user):
+    if current_user.role not in ['admin', 'teacher']:
+        return jsonify({'error': 'Unauthorized'}), 403
+
+    class_id = request.args.get('class_id')
+    gender = request.args.get('gender')
+    search = request.args.get('search')
+
+    query = Student.query
+
+    if class_id:
+        query = query.filter_by(class_id=class_id)
+    if gender:
+        query = query.filter_by(gender=gender)
+    if search:
+        query = query.filter(
+            (Student.first_name.ilike(f'%{search}%')) |
+            (Student.last_name.ilike(f'%{search}%')) |
+            (Student.admission_number.ilike(f'%{search}%'))
+        )
+
+    students = query.all()
+
+    return jsonify([{
+        'student_id': s.student_id,
+        'first_name': s.first_name,
+        'last_name': s.last_name,
+        'admission_number': s.admission_number,
+        'gender': s.gender,
+        'class_id': s.class_id,
+        'class_name': s.classroom.class_name if s.classroom else None
+    } for s in students]), 200
