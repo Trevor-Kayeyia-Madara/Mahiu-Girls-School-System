@@ -16,6 +16,7 @@ from .teacher_subject import teacher_subject_bp
 from .exam_schedules import exam_schedules_bp
 from .teacher_reports import teacher_report_bp
 from .dashboard import dashboard_bp
+from .student_selections import student_selection_bp
 
 def init_routes(app):
    app.register_blueprint(auth_bp,url_prefix='/api/v1/auth')
@@ -37,3 +38,4 @@ def init_routes(app):
    app.register_blueprint(exam_schedules_bp, url_prefix='/api/v1/exam-schedules')
    app.register_blueprint(teacher_report_bp, url_prefix='/api/v1/teacher-reports')
    app.register_blueprint(dashboard_bp, url_prefix='/api/v1/dashboard')
+   app.register_blueprint(student_selection_bp, url_prefix='/api/v1/student-selection')
