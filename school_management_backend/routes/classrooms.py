@@ -44,7 +44,8 @@ def create_class(current_user):
     data = request.get_json()
     new_class = Classroom(
         class_name=data['class_name'],
-        class_teacher_id=data.get('class_teacher_id')
+        class_teacher_id=data.get('class_teacher_id'),
+        form_level=data['form_level']
     )
     db.session.add(new_class)
     db.session.commit()
