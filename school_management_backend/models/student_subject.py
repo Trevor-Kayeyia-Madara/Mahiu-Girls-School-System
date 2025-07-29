@@ -7,5 +7,6 @@ class StudentSelection(db.Model):
         subject_id = db.Column(db.Integer, db.ForeignKey('subjects.subject_id'), nullable=False)
         
         
-        student = db.relationship('Student', backref='grades')
-        subject = db.relationship('Subject', backref='grades')
+         # Relationships with unique backrefs
+        student = db.relationship('Student', backref='subject_selections')
+        subject = db.relationship('Subject', backref='student_selections')
