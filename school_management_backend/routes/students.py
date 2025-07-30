@@ -236,29 +236,22 @@ def get_students_by_class(current_user, class_id):
 
     return jsonify(result), 200
 
-# 🔍 Filter students
 @student_bp.route('/filter', methods=['GET'])
-@token_required
-def filter_students(current_user):
-    if current_user.role not in ['admin', 'teacher']:
-        return jsonify({'error': 'Unauthorized'}), 403
-
-    class_id = request.args.get('class_id')
+def filter_students():
+    form_level = request.args.get('form_level', type=int)
     gender = request.args.get('gender')
-    search = request.args.get('search')
+    class_id = request.args.get('class_id', type=int)
 
-    query = Student.query
+    query = Student.query.join(Classroom)
 
-    if class_id:
-        query = query.filter_by(class_id=class_id)
+    if form_level is not None:
+        query = query.filter(Classroom.form_level == form_level)
+    
     if gender:
-        query = query.filter_by(gender=gender)
-    if search:
-        query = query.filter(
-            (Student.first_name.ilike(f'%{search}%')) |
-            (Student.last_name.ilike(f'%{search}%')) |
-            (Student.admission_number.ilike(f'%{search}%'))
-        )
+        query = query.filter(Student.gender.ilike(gender))  # case-insensitive
+    
+    if class_id is not None:
+        query = query.filter(Student.class_id == class_id)
 
     students = query.all()
 
@@ -269,5 +262,6 @@ def filter_students(current_user):
         'admission_number': s.admission_number,
         'gender': s.gender,
         'class_id': s.class_id,
-        'class_name': s.classroom.class_name if s.classroom else None
+        'class_name': s.classroom.class_name if s.classroom else None,
+        'form_level': s.classroom.form_level if s.classroom else None
     } for s in students]), 200

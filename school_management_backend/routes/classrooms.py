@@ -116,3 +116,22 @@ def get_class_teacher(current_user, class_id):
         'teacher_id': classroom.class_teacher.staff_id,
         'teacher_name': classroom.class_teacher.user.name
     }), 200
+    
+    # ✅ Add this to your classrooms routes file
+@class_bp.route('/filter', methods=['GET'])
+def get_classes_by_form():
+    form_level = request.args.get('form_level', type=int)
+
+    query = Classroom.query
+    if form_level is not None:
+        query = query.filter_by(form_level=form_level)
+
+    classes = query.all()
+
+    return jsonify([{
+        'class_id': c.class_id,
+        'class_name': c.class_name,
+        'form_level': c.form_level,
+        'class_teacher_id': c.class_teacher_id,
+        'class_teacher_name': c.class_teacher.user.name if c.class_teacher else None
+    } for c in classes]), 200

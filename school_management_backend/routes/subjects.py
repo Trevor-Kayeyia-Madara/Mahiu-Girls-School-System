@@ -6,11 +6,7 @@ subject_bp = Blueprint('subjects', __name__)
 
 # GET all subjects
 @subject_bp.route('/', methods=['GET'])
-@token_required
-def list_subjects(current_user):
-    if current_user.role not in ['admin', 'teacher']:
-        return jsonify({'error': 'Unauthorized'}), 403
-
+def list_subjects():
     subjects = Subject.query.order_by(Subject.name).all()
     return jsonify([
         {

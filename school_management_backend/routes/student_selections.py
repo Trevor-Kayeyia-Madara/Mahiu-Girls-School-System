@@ -6,13 +6,14 @@ from utils.auth_utils import token_required
 student_selection_bp = Blueprint('student_selection', __name__)
 
 
-# -------------------- POST: Select subjects --------------------
+from flask import Blueprint, request, jsonify
+from models import db, Student, Subject, StudentSelection
+
+student_selection_bp = Blueprint('student_selection', __name__)
+
+# -------------------- POST: Select Subjects --------------------
 @student_selection_bp.route('/select-subjects', methods=['POST'])
-@token_required
-def select_subjects(current_user):
-    if current_user.role != 'admin':
-        return jsonify({'error': 'Unauthorized'}), 403
-    
+def select_subjects():
     data = request.get_json()
 
     student_id = data.get('student_id')
@@ -27,7 +28,9 @@ def select_subjects(current_user):
 
     form_level = student.classroom.form_level
     if form_level not in ['Form 3', 'Form 4']:
-        return jsonify({'error': f'Subject selection allowed only for Form 3 and 4 students. Student is in {form_level}.'}), 403
+        return jsonify({
+            'error': f'Subject selection allowed only for Form 3 and 4 students. Student is in {form_level}.'
+        }), 403
 
     # Optional: Clear old selections before adding new ones
     StudentSelection.query.filter_by(student_id=student_id).delete()
@@ -40,6 +43,7 @@ def select_subjects(current_user):
 
     db.session.commit()
     return jsonify({'message': 'Subjects successfully selected'}), 200
+
 
 
 # -------------------- GET: Retrieve selected subjects --------------------
